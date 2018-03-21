@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Install 抽象实现类，主要实现了基础的配置信息
  * An abstract instance info configuration with some defaults to get the users
  * started quickly.The users have to override only a few methods to register
  * their instance with eureka server.
@@ -37,19 +38,57 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
     private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceConfig.class);
 
     /**
+     * 默认的名称空间 eureka
      * @deprecated 2016-08-29 use {@link CommonConstants#DEFAULT_CONFIG_NAMESPACE}
      */
     @Deprecated
     public static final String DEFAULT_NAMESPACE = CommonConstants.DEFAULT_CONFIG_NAMESPACE;
-    
+
+    /**
+     * 默认的租约过期时间 90s
+     */
     private static final int LEASE_EXPIRATION_DURATION_SECONDS = 90;
+
+    /**
+     * 默认 租约续约频率 30s
+     */
     private static final int LEASE_RENEWAL_INTERVAL_SECONDS = 30;
+
+    /**
+     * 默认关闭应用 https 端口
+     */
     private static final boolean SECURE_PORT_ENABLED = false;
+
+    /**
+     * 默认开启应用 http 端口
+     */
     private static final boolean NON_SECURE_PORT_ENABLED = true;
+
+    /**
+     * 默认的http端口
+     */
     private static final int NON_SECURE_PORT = 80;
+
+    /**
+     * 默认https端口
+     */
     private static final int SECURE_PORT = 443;
+
+    /**
+     * 应用初始化后开启
+     */
     private static final boolean INSTANCE_ENABLED_ON_INIT = false;
+
+    /**
+     * 主机信息
+     * key：主机 IP 地址
+     * value：主机名
+     */
     private static final Pair<String, String> hostInfo = getHostInfo();
+
+    /**
+     * 默认的数据中心
+     */
     private DataCenterInfo info = new DataCenterInfo() {
         @Override
         public Name getName() {
@@ -211,6 +250,11 @@ public abstract class AbstractInstanceConfig implements EurekaInstanceConfig {
         return hostInfo.first();
     }
 
+    /**
+     * 获取本地服务器的主机名和主机 IP 地址。如果主机有多网卡或者虚拟机网卡，这块要小心，解决方式如下：
+     * 手动配置本机的 hostname + etc/hosts 文件，从而映射主机名和 IP 地址
+     * @return
+     */
     private static Pair<String, String> getHostInfo() {
         Pair<String, String> pair;
         try {
