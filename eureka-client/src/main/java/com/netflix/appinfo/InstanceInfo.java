@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 应用实例信息。Eureka-Client 向 Eureka-Server 注册该对象信息。注册成功后，可以被其他 Eureka-Client 发现
  * The class that holds information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
  * <p>
@@ -51,6 +52,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Karthik Ranganathan, Greg Kim
  */
+//默认实现工厂
 @ProvidedBy(EurekaConfigBasedInstanceInfoProvider.class)
 @Serializer("com.netflix.discovery.converters.EntityBodyConverter")
 @XStreamAlias("instance")
@@ -60,11 +62,18 @@ public class InstanceInfo {
     private static final String VERSION_UNKNOWN = "unknown";
 
     /**
+     * 应用端口包装类
      * {@link InstanceInfo} JSON and XML format for port information does not follow the usual conventions, which
      * makes its mapping complicated. This class represents the wire format for port information.
      */
     public static class PortWrapper {
+        /**
+         * 是否开启
+         */
         private final boolean enabled;
+        /**
+         * 端口
+         */
         private final int port;
 
         @JsonCreator
@@ -84,24 +93,58 @@ public class InstanceInfo {
 
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfo.class);
 
+    /**
+     * 实例的默认HTTP端口
+     */
     public static final int DEFAULT_PORT = 7001;
+    /**
+     * 实例的默认HTTPS端口
+     */
     public static final int DEFAULT_SECURE_PORT = 7002;
+
     public static final int DEFAULT_COUNTRY_ID = 1; // US
 
+    /**
+     * 实例名称
+     * 需要保证在相同应用名下唯一。
+     */
     // The (fixed) instanceId for this instanceInfo. This should be unique within the scope of the appName.
     private volatile String instanceId;
 
+    /**
+     * 应用名
+     */
     private volatile String appName;
+
+    /**
+     * 应用分组
+     */
     @Auto
     private volatile String appGroupName;
 
+    /**
+     *
+     */
     private volatile String ipAddr;
 
+    /**
+     *
+     */
     private static final String SID_DEFAULT = "na";
+
+    /**
+     *
+     */
     @Deprecated
     private volatile String sid = SID_DEFAULT;
 
+    /**
+     * 应用HTTP端口
+     */
     private volatile int port = DEFAULT_PORT;
+    /**
+     * 应用HTTPs端口
+     */
     private volatile int securePort = DEFAULT_SECURE_PORT;
 
     @Auto
@@ -130,34 +173,82 @@ public class InstanceInfo {
     private String secureVipAddressUnresolved;
     @XStreamOmitField
     private String healthCheckExplicitUrl;
+    /**
+     *
+     */
     @Deprecated
     private volatile int countryId = DEFAULT_COUNTRY_ID; // Defaults to US
+    /**
+     * 是否开启HTTPS端口
+     */
     private volatile boolean isSecurePortEnabled = false;
+    /**
+     * 是否开启HTTP端口
+     */
     private volatile boolean isUnsecurePortEnabled = true;
+    /**
+     *  应用的数据中心
+     */
     private volatile DataCenterInfo dataCenterInfo;
+    /**
+     * 应用的hostname
+     */
     private volatile String hostName;
+    /**
+     * 应用的状态
+     */
     private volatile InstanceStatus status = InstanceStatus.UP;
+    /**
+     * 应用
+     */
     private volatile InstanceStatus overriddenstatus = InstanceStatus.UNKNOWN;
+
+    /**
+     * 应用实例信息是否为脏数据
+     */
     @XStreamOmitField
     private volatile boolean isInstanceInfoDirty = false;
+    /**
+     * 应用的租约信息
+     */
     private volatile LeaseInfo leaseInfo;
+
     @Auto
     private volatile Boolean isCoordinatingDiscoveryServer = Boolean.FALSE;
+    /**
+     * 应用的元数据信息
+     */
     @XStreamAlias("metadata")
     private volatile Map<String, String> metadata;
+    /**
+     * 应用最后更新时间戳
+     */
     @Auto
     private volatile Long lastUpdatedTimestamp;
+    /**
+     *应用最后脏数据时间戳
+     */
     @Auto
     private volatile Long lastDirtyTimestamp;
+    /**
+     * 应用的动作类型
+     */
     @Auto
     private volatile ActionType actionType;
     @Auto
     private volatile String asgName;
+
+    /**
+     * 应用的版本信息
+     */
     private String version = VERSION_UNKNOWN;
 
     private InstanceInfo() {
+        //应用元数据
         this.metadata = new ConcurrentHashMap<String, String>();
+        //应用最后更新的时间戳
         this.lastUpdatedTimestamp = System.currentTimeMillis();
+        //应用最后脏数据时间戳
         this.lastDirtyTimestamp = lastUpdatedTimestamp;
     }
 
@@ -188,13 +279,18 @@ public class InstanceInfo {
             @JsonProperty("lastDirtyTimestamp") Long lastDirtyTimestamp,
             @JsonProperty("actionType") ActionType actionType,
             @JsonProperty("asgName") String asgName) {
+        //实例ID
         this.instanceId = instanceId;
         this.sid = sid;
+        //实例名称
         this.appName = StringCache.intern(appName);
+        //实例组名称
         this.appGroupName = StringCache.intern(appGroupName);
         this.ipAddr = ipAddr;
+        //实例HTTP端口
         this.port = port == null ? 0 : port.getPort();
         this.isUnsecurePortEnabled = port != null && port.isEnabled();
+        //实例的HTTPS端口
         this.securePort = securePort == null ? 0 : securePort.getPort();
         this.isSecurePortEnabled = securePort != null && securePort.isEnabled();
         this.homePageUrl = homePageUrl;
@@ -304,7 +400,9 @@ public class InstanceInfo {
         this.version = ii.version;
     }
 
-
+    /**
+     * 应用状态
+     */
     public enum InstanceStatus {
         UP, // Ready to receive traffic
         DOWN, // Do not send traffic- healthcheck callback failed
@@ -355,14 +453,30 @@ public class InstanceInfo {
         return true;
     }
 
+    /**
+     * 应用端口类型
+     */
     public enum PortType {
-        SECURE, UNSECURE
+        //HTTPS
+        SECURE,
+        //HTTP
+        UNSECURE
     }
 
     public static final class Builder {
         private static final String COLON = ":";
+        /**
+         * HTTPS 协议头
+         */
         private static final String HTTPS_PROTOCOL = "https://";
+        /**
+         * HTTP 协议头
+         */
         private static final String HTTP_PROTOCOL = "http://";
+
+        /**
+         *
+         */
         private final Function<String,String> intern;
 
         private static final class LazyHolder {
@@ -378,8 +492,11 @@ public class InstanceInfo {
         private String namespace;
 
         private Builder(InstanceInfo result, VipAddressResolver vipAddressResolver, Function<String,String> intern) {
+            //VIP地址解析器
             this.vipAddressResolver = vipAddressResolver;
+            //实例信息
             this.result = result;
+            //Stting 缓存器
             this.intern = intern != null ? intern : StringCache::intern;
         }
 
@@ -1330,9 +1447,15 @@ public class InstanceInfo {
         return version;
     }
 
+    /**
+     * 应用的动作类型
+     */
     public enum ActionType {
+        //在注册中心添加应用
         ADDED, // Added in the discovery server
+        //在注册中心修改应用
         MODIFIED, // Changed in the discovery server
+        //在注册中心删除应用
         DELETED
         // Deleted from the discovery server
     }

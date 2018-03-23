@@ -57,6 +57,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates how often(in seconds) to fetch the registry information from
      * the eureka server.
+     * 从 Eureka-Server 拉取注册信息频率，单位：秒
      *
      * @return the fetch interval in seconds.
      */
@@ -65,7 +66,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates how often(in seconds) to replicate instance changes to be
      * replicated to the eureka server.
-     *
+     * 向 Eureka-Server 同步实例对象信息变化频率，单位：秒
      * @return the instance replication interval in seconds.
      */
     int getInstanceInfoReplicationIntervalSeconds();
@@ -73,13 +74,14 @@ public interface EurekaClientConfig {
     /**
      * Indicates how long initially (in seconds) to replicate instance info
      * to the eureka server
+     * 向 Eureka-Server 同步应用信息变化初始化延迟，单位：秒
      */
     int getInitialInstanceInfoReplicationIntervalSeconds();
 
     /**
      * Indicates how often(in seconds) to poll for changes to eureka server
      * information.
-     *
+     * 轮询获取 Eureka-Server 地址变更频率，单位：秒
      * <p>
      * Eureka servers could be added or removed and this setting controls how
      * soon the eureka clients should know about it.
@@ -91,28 +93,28 @@ public interface EurekaClientConfig {
 
     /**
      * Gets the proxy host to eureka server if any.
-     *
+     * Eureka-Server 代理主机
      * @return the proxy host.
      */
     String getProxyHost();
 
     /**
      * Gets the proxy port to eureka server if any.
-     *
+     * Eureka-Server 代理主机端口
      * @return the proxy port.
      */
     String getProxyPort();
 
     /**
      * Gets the proxy user name if any.
-     *
+     * Eureka-Server 代理用户名
      * @return the proxy user name.
      */
     String getProxyUserName();
 
     /**
      * Gets the proxy password if any.
-     *
+     * Eureka-Server 代理密码
      * @return the proxy password.
      */
     String getProxyPassword();
@@ -131,7 +133,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates how long to wait (in seconds) before a read from eureka server
      * needs to timeout.
-     *
+     * Eureka-Server 读取超时时间
      * @return time in seconds before the read should timeout.
      */
     int getEurekaServerReadTimeoutSeconds();
@@ -139,7 +141,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates how long to wait (in seconds) before a connection to eureka
      * server needs to timeout.
-     *
+     * Eureka-Server 连接超时时间
      * <p>
      * Note that the connections in the client are pooled by
      * {@link org.apache.http.client.HttpClient} and this setting affects the actual
@@ -155,7 +157,10 @@ public interface EurekaClientConfig {
      * Gets the name of the implementation which implements
      * {@link BackupRegistry} to fetch the registry information as a fall back
      * option for only the first time when the eureka client starts.
+     * 获取备份注册中心实现类
      *
+     * 当 Eureka-Client 启动时，无法从 Eureka-Server 读取注册信息（可能挂了），从备份注册中心读取注册信息
+     * ps：目前 Eureka-Client 未提供合适的实现。
      * <p>
      * This may be needed for applications which needs additional resiliency for
      * registry information without which it cannot operate.
@@ -168,7 +173,7 @@ public interface EurekaClientConfig {
     /**
      * Gets the total number of connections that is allowed from eureka client
      * to all eureka servers.
-     *
+     * 所有 Eureka-Server 总连接数
      * @return total number of allowed connections from eureka client to all
      *         eureka servers.
      */
@@ -177,7 +182,7 @@ public interface EurekaClientConfig {
     /**
      * Gets the total number of connections that is allowed from eureka client
      * to a eureka server host.
-     *
+     * 单个 Eureka-Server 总连接数
      * @return total number of allowed connections from eureka client to a
      *         eureka server.
      */
@@ -188,7 +193,7 @@ public interface EurekaClientConfig {
      * contact eureka server when the list of eureka servers come from the
      * DNS.This information is not required if the contract returns the service
      * urls by implementing {@link #getEurekaServerServiceUrls(String)}.
-     *
+     * Eureka-Server 的 URL Context
      * <p>
      * The DNS mechanism is used when
      * {@link #shouldUseDnsForFetchingServiceUrls()} is set to <em>true</em> and
@@ -210,7 +215,7 @@ public interface EurekaClientConfig {
      * eureka server when the list of eureka servers come from the DNS.This
      * information is not required if the contract returns the service urls by
      * implementing {@link #getEurekaServerServiceUrls(String)}.
-     *
+     * Eureka-Server 的 Port
      * <p>
      * The DNS mechanism is used when
      * {@link #shouldUseDnsForFetchingServiceUrls()} is set to <em>true</em> and
@@ -231,7 +236,7 @@ public interface EurekaClientConfig {
      * Gets the DNS name to be queried to get the list of eureka servers.This
      * information is not required if the contract returns the service urls by
      * implementing {@link #getEurekaServerServiceUrls(String)}.
-     *
+     * Eureka-Server 的 DNS 名
      * <p>
      * The DNS mechanism is used when
      * {@link #shouldUseDnsForFetchingServiceUrls()} is set to <em>true</em> and
@@ -254,7 +259,7 @@ public interface EurekaClientConfig {
      * additional servers, that information is used immediately after the eureka
      * client polls for that information as specified in
      * {@link #getEurekaServiceUrlPollIntervalSeconds()}.
-     *
+     * 是否使用 DNS 获取 Eureka-Server 地址集合
      * <p>
      * Alternatively, the service urls can be returned
      * {@link #getEurekaServerServiceUrls(String)}, but the users should implement
@@ -272,7 +277,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates whether or not this instance should register its information
      * with eureka server for discovery by others.
-     *
+     * 是否向 Eureka-Server 注册自身服务
      * <p>
      * In some cases, you do not want your instances to be discovered whereas
      * you just want do discover other instances.
@@ -286,7 +291,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates whether the client should explicitly unregister itself from the remote server
      * on client shutdown.
-     * 
+     * 是否向 Eureka-Server 取消注册自身服务，当进程关闭时
      * @return true if this instance should unregister with eureka on client shutdown, false otherwise
      */
     default boolean shouldUnregisterOnShutdown() {
@@ -296,7 +301,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates whether or not this instance should try to use the eureka
      * server in the same zone for latency and/or other reason.
-     *
+     * 优先使用相同 Zone 的 Eureka-Server
      * <p>
      * Ideally eureka clients are configured to talk to servers in the same zone
      * </p>
@@ -315,7 +320,7 @@ public interface EurekaClientConfig {
      * Indicates whether server can redirect a client request to a backup server/cluster.
      * If set to false, the server will handle the request directly, If set to true, it may
      * send HTTP redirect to the client, with a new server location.
-     *
+     * 是否允许被 Eureka-Server 重定向
      * @return true if HTTP redirects are allowed
      */
     boolean allowRedirects();
@@ -371,7 +376,7 @@ public interface EurekaClientConfig {
      * Comma separated list of regions for which the eureka registry information will be fetched. It is mandatory to
      * define the availability zones for each of these regions as returned by {@link #getAvailabilityZones(String)}.
      * Failing to do so, will result in failure of discovery client startup.
-     *
+     * 获取哪些区域( Region )集合的注册信息
      * @return Comma separated list of regions for which the eureka registry information will be fetched.
      * <code>null</code> if no remote region has to be fetched.
      */
@@ -380,7 +385,7 @@ public interface EurekaClientConfig {
 
     /**
      * Gets the region (used in AWS datacenters) where this instance resides.
-     *
+     * 所在区域( Region )
      * @return AWS region where this instance resides.
      */
     String getRegion();
@@ -388,7 +393,7 @@ public interface EurekaClientConfig {
     /**
      * Gets the list of availability zones (used in AWS data centers) for the
      * region in which this instance resides.
-     *
+     * 获得所在区域( Region ) 里可用区集合( Zone )
      * <p>
      * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
      * {@link #getRegistryFetchIntervalSeconds()}</em>
@@ -402,7 +407,7 @@ public interface EurekaClientConfig {
     /**
      * Gets the list of fully qualified {@link java.net.URL}s to communicate with eureka
      * server.
-     *
+     * 获取 Eureka-Client 所在区域( Zone )的 Eureka-Server 服务地址
      * <p>
      * Typically the eureka server {@link java.net.URL}s carry protocol,host,port,context
      * and version information if any.
@@ -423,7 +428,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates whether to get the <em>applications</em> after filtering the
      * applications for instances with only {@link com.netflix.appinfo.InstanceInfo.InstanceStatus#UP} states.
-     *
+     * 是否过滤，只获取状态为开启( Up )的应用实例集合
      * <p>
      * <em>The changes are effective at runtime at the next registry fetch cycle as specified by
      * {@link #getRegistryFetchIntervalSeconds()}</em>
@@ -436,7 +441,7 @@ public interface EurekaClientConfig {
     /**
      * Indicates how much time (in seconds) that the HTTP connections to eureka
      * server can stay idle before it can be closed.
-     *
+     * Eureka-Server 连接的空闲关闭时间，单位：秒
      * <p>
      * In the AWS environment, it is recommended that the values is 30 seconds
      * or less, since the firewall cleans up the connection information after a
@@ -450,7 +455,7 @@ public interface EurekaClientConfig {
 
     /**
      * Indicates whether this client should fetch eureka registry information from eureka server.
-     *
+     * 是否从 Eureka-Server 拉取注册信息
      * @return {@code true} if registry information has to be fetched, {@code false} otherwise.
      */
     boolean shouldFetchRegistry();
@@ -467,6 +472,7 @@ public interface EurekaClientConfig {
     /**
      * The thread pool size for the heartbeatExecutor to initialise with
      *
+     * 心跳执行线程池大小
      * @return the heartbeatExecutor thread pool size
      */
     int getHeartbeatExecutorThreadPoolSize();
@@ -475,14 +481,14 @@ public interface EurekaClientConfig {
      * Heartbeat executor exponential back off related property.
      * It is a maximum multiplier value for retry delay, in case where a sequence of timeouts
      * occurred.
-     *
+     * 心跳执行超时后的延迟重试的时间
      * @return maximum multiplier value for retry delay
      */
     int getHeartbeatExecutorExponentialBackOffBound();
 
     /**
      * The thread pool size for the cacheRefreshExecutor to initialise with
-     *
+     * 注册信息缓存刷新线程池大小
      * @return the cacheRefreshExecutor thread pool size
      */
     int getCacheRefreshExecutorThreadPoolSize();
@@ -491,21 +497,21 @@ public interface EurekaClientConfig {
      * Cache refresh executor exponential back off related property.
      * It is a maximum multiplier value for retry delay, in case where a sequence of timeouts
      * occurred.
-     *
+     * 注册信息缓存刷新执行超时后的延迟重试的时间。
      * @return maximum multiplier value for retry delay
      */
     int getCacheRefreshExecutorExponentialBackOffBound();
 
     /**
      * Get a replacement string for Dollar sign <code>$</code> during serializing/deserializing information in eureka server.
-     *
+     * Eureka-Server 序列化/反序列化信息时，将 $ 替换成的字符串
      * @return Replacement string for Dollar sign <code>$</code>.
      */
     String getDollarReplacement();
 
     /**
      * Get a replacement string for underscore sign <code>_</code> during serializing/deserializing information in eureka server.
-     *
+     * Eureka-Server 序列化/反序列化信息时，将 _ 替换成的字符串
      * @return Replacement string for underscore sign <code>_</code>.
      */
     String getEscapeCharReplacement();
@@ -514,7 +520,7 @@ public interface EurekaClientConfig {
      * If set to true, local status updates via
      * {@link com.netflix.appinfo.ApplicationInfoManager#setInstanceStatus(com.netflix.appinfo.InstanceInfo.InstanceStatus)}
      * will trigger on-demand (but rate limited) register/updates to remote eureka servers
-     *
+     * 是否同步应用实例状态到 Eureka-Server
      * @return true or false for whether local status updates should be updated to remote servers on-demand
      */
     boolean shouldOnDemandUpdateStatusChange();
@@ -533,19 +539,20 @@ public interface EurekaClientConfig {
 
     /**
      * This is a transient config and once the latest codecs are stable, can be removed (as there will only be one)
-     *
+     * 编码器名
      * @return the class name of the encoding codec to use for the client. If none set a default codec will be used
      */
     String getEncoderName();
 
     /**
      * This is a transient config and once the latest codecs are stable, can be removed (as there will only be one)
-     *
+     * 解码器名
      * @return the class name of the decoding codec to use for the client. If none set a default codec will be used
      */
     String getDecoderName();
 
     /**
+     *  Eureka-Client 可接收数据类型
      * @return {@link com.netflix.appinfo.EurekaAccept#name()} for client data accept
      */
     String getClientDataAccept();

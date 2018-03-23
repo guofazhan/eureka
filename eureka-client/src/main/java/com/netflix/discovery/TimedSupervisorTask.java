@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 定时任务抽象类，抽象了基础的定时任务功能
  * A supervisor task that schedules subtasks while enforce a timeout.
  * Wrapped subtasks must be thread safe.
  *
@@ -25,6 +26,9 @@ import org.slf4j.LoggerFactory;
 public class TimedSupervisorTask extends TimerTask {
     private static final Logger logger = LoggerFactory.getLogger(TimedSupervisorTask.class);
 
+    /**
+     * 超时计数器
+     */
     private final Counter timeoutCounter;
     private final Counter rejectedCounter;
     private final Counter throwableCounter;
@@ -41,10 +45,15 @@ public class TimedSupervisorTask extends TimerTask {
     public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
                                int timeout, TimeUnit timeUnit, int expBackOffBound, Runnable task) {
         this.scheduler = scheduler;
+        //任务执行的线程池
         this.executor = executor;
+        //任务执行的超时时长
         this.timeoutMillis = timeUnit.toMillis(timeout);
+        //任务实例
         this.task = task;
+        //延迟时长
         this.delay = new AtomicLong(timeoutMillis);
+        //最大延迟时长
         this.maxDelay = timeoutMillis * expBackOffBound;
 
         // Initialize the counters and register.
@@ -59,13 +68,18 @@ public class TimedSupervisorTask extends TimerTask {
     public void run() {
         Future<?> future = null;
         try {
+            //任务放入线程池中执行
             future = executor.submit(task);
             threadPoolLevelGauge.set((long) executor.getActiveCount());
-            future.get(timeoutMillis, TimeUnit.MILLISECONDS);  // block until done or timeout
+            //获取任务执行结果，并设置任务超时时间
+            // block until done or timeout
+            future.get(timeoutMillis, TimeUnit.MILLISECONDS);
+            //设置任务的延迟时长
             delay.set(timeoutMillis);
             threadPoolLevelGauge.set((long) executor.getActiveCount());
         } catch (TimeoutException e) {
             logger.warn("task supervisor timed out", e);
+            //超时计数器+1
             timeoutCounter.increment();
 
             long currentDelay = delay.get();

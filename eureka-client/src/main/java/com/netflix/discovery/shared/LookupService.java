@@ -20,6 +20,8 @@ import java.util.List;
 import com.netflix.appinfo.InstanceInfo;
 
 /**
+ * 查找服务接口，提供简单单一的方式获取应用集合(com.netflix.discovery.shared.Applications)
+ * 和 应用实例信息集合( com.netflix.appinfo.InstanceInfo )
  * Lookup service for finding active instances.
  *
  * @author Karthik Ranganathan, Greg Kim.
@@ -39,6 +41,7 @@ public interface LookupService<T> {
     Application getApplication(String appName);
 
     /**
+     * 获取所有注册的应用集合
      * Returns the {@link Applications} object which is basically a container of
      * all currently registered {@link Application}s.
      *
@@ -47,6 +50,7 @@ public interface LookupService<T> {
     Applications getApplications();
 
     /**
+     * 根据ID查实例集合
      * Returns the {@link List} of {@link InstanceInfo}s matching the the passed
      * in id. A single {@link InstanceInfo} can possibly be registered w/ more
      * than one {@link Application}s

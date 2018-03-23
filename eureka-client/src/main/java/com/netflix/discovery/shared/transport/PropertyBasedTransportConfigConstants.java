@@ -1,6 +1,7 @@
 package com.netflix.discovery.shared.transport;
 
 /**
+ * 基于配置文件的网络传输配置 key常量类
  * constants pertaining to property based transport configs
  *
  * @author David Liu

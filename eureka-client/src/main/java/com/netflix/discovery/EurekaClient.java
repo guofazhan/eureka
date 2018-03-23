@@ -14,6 +14,7 @@ import com.netflix.discovery.shared.Applications;
 import com.netflix.discovery.shared.LookupService;
 
 /**
+ * 注册中心客户端接口类
  * Define a simple interface over the current DiscoveryClient implementation.
  *
  * This interface does NOT try to clean up the current client interface for eureka 1.x. Rather it tries
@@ -34,6 +35,7 @@ public interface EurekaClient extends LookupService {
     // ========================
 
     /**
+     * 根据区域查询应用集合
      * @param region the region that the Applications reside in
      * @return an {@link com.netflix.discovery.shared.Applications} for the matching region. a Null value
      *         is treated as the local region.
@@ -41,6 +43,7 @@ public interface EurekaClient extends LookupService {
     public Applications getApplicationsForARegion(@Nullable String region);
 
     /**
+     * 根据服务serviceUrl 查询应用集合
      * Get all applications registered with a specific eureka service.
      *
      * @param serviceUrl The string representation of the service url.
@@ -49,6 +52,7 @@ public interface EurekaClient extends LookupService {
     public Applications getApplications(String serviceUrl);
 
     /**
+     * 根据VipAddress查询实例信息集合
      * Gets the list of instances matching the given VIP Address.
      *
      * @param vipAddress The VIP address to match the instances for.
@@ -86,16 +90,19 @@ public interface EurekaClient extends LookupService {
     // ==========================
 
     /**
+     * 查询所有已知的区域
      * @return in String form all regions (local + remote) that can be accessed by this client
      */
     public Set<String> getAllKnownRegions();
 
     /**
+     * 获取当前实例在注册中心的实例状态信息
      * @return the current self instance status as seen on the Eureka server.
      */
     public InstanceInfo.InstanceStatus getInstanceRemoteStatus();
 
     /**
+     * 获取给定时区zone的所有eureka 服务url
      * @deprecated see {@link com.netflix.discovery.endpoint.EndpointUtils} for replacement
      *
      * Get the list of all eureka service urls for the eureka client to talk to.
@@ -138,6 +145,7 @@ public interface EurekaClient extends LookupService {
     // ===========================
 
     /**
+     * 注册健康检查回调函数
      * @deprecated Use {@link #registerHealthCheck(com.netflix.appinfo.HealthCheckHandler)} instead.
      *
      * Register {@link HealthCheckCallback} with the eureka client.
@@ -152,6 +160,7 @@ public interface EurekaClient extends LookupService {
     public void registerHealthCheckCallback(HealthCheckCallback callback);
 
     /**
+     * 注册健康检查处理器
      * Register {@link HealthCheckHandler} with the eureka client.
      *
      * Once registered, the eureka client will first make an onDemand update of the
@@ -164,6 +173,7 @@ public interface EurekaClient extends LookupService {
     public void registerHealthCheck(HealthCheckHandler healthCheckHandler);
 
     /**
+     * 注册当前eureka客户端的事件监听器
      * Register {@link EurekaEventListener} with the eureka client.
      *
      * Once registered, the eureka client will invoke {@link EurekaEventListener#onEvent} 
@@ -178,6 +188,7 @@ public interface EurekaClient extends LookupService {
     public void registerEventListener(EurekaEventListener eventListener);
     
     /**
+     * 移除事件监听器
      * Unregister a {@link EurekaEventListener} previous registered with {@link EurekaClient#registerEventListener}
      * or injected into the constructor of {@link DiscoveryClient}
      * 
@@ -187,6 +198,7 @@ public interface EurekaClient extends LookupService {
     public boolean unregisterEventListener(EurekaEventListener eventListener);
     
     /**
+     * 获取健康检查处理器
      * @return the current registered healthcheck handler
      */
     public HealthCheckHandler getHealthCheckHandler();
@@ -196,16 +208,19 @@ public interface EurekaClient extends LookupService {
     // =============
 
     /**
+     * 关闭 Eureka Client
      * Shuts down Eureka Client. Also sends a deregistration request to the eureka server.
      */
     public void shutdown();
     
     /**
+     * 获取当前eureka 客户端配置信息
      * @return the configuration of this eureka client
      */
     public EurekaClientConfig getEurekaClientConfig();
     
     /**
+     * 获取当前eureka 客户端应用信息管理实例
      * @return the application info manager of this eureka client
      */
     public ApplicationInfoManager getApplicationInfoManager();

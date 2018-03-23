@@ -1,6 +1,7 @@
 package com.netflix.discovery;
 
 /**
+ *
  * constants pertaining to property based client configs
  *
  * @author David Liu

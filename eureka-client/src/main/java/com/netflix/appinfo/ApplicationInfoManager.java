@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 应用信息管理器
  * The class that initializes information required for registration with
  * <tt>Eureka Server</tt> and to be discovered by other components.
  *
@@ -48,6 +49,9 @@ import org.slf4j.LoggerFactory;
 public class ApplicationInfoManager {
     private static final Logger logger = LoggerFactory.getLogger(ApplicationInfoManager.class);
 
+    /**
+     * 默认应用实例状态匹配
+     */
     private static final InstanceStatusMapper NO_OP_MAPPER = new InstanceStatusMapper() {
         @Override
         public InstanceStatus map(InstanceStatus prev) {
@@ -55,12 +59,29 @@ public class ApplicationInfoManager {
         }
     };
 
+    /**
+     * 单例
+     */
     private static ApplicationInfoManager instance = new ApplicationInfoManager(null, null, null);
 
+    /**
+     * 应用实例状态监听器集合
+     */
     protected final Map<String, StatusChangeListener> listeners;
+
+    /**
+     * 应用实例状态匹配
+     */
     private final InstanceStatusMapper instanceStatusMapper;
 
+    /**
+     * 应该实例
+     */
     private InstanceInfo instanceInfo;
+
+    /**
+     * 应用实例配置信息
+     */
     private EurekaInstanceConfig config;
 
     public static class OptionalArgs {
@@ -142,6 +163,7 @@ public class ApplicationInfoManager {
     }
 
     /**
+     * 注册user-specific instance meta data
      * Register user-specific instance meta data. Application can send any other
      * additional meta data that need to be accessed for other reasons.The data
      * will be periodically sent to the eureka server.
@@ -158,6 +180,7 @@ public class ApplicationInfoManager {
     }
 
     /**
+     * 变更实例状态
      * Set the status of this instance. Application can use this to indicate
      * whether it is ready to receive traffic. Setting the status here also notifies all registered listeners
      * of a status change event.
@@ -182,15 +205,24 @@ public class ApplicationInfoManager {
         }
     }
 
+    /**
+     * 注册实例状态变更监听器
+     * @param listener
+     */
     public void registerStatusChangeListener(StatusChangeListener listener) {
         listeners.put(listener.getId(), listener);
     }
 
+    /**
+     *  移除实例状态变更监听器
+     * @param listenerId
+     */
     public void unregisterStatusChangeListener(String listenerId) {
         listeners.remove(listenerId);
     }
 
     /**
+     * 刷新 hostname DataCenter
      * Refetches the hostname to check if it has changed. If it has, the entire
      * <code>DataCenterInfo</code> is refetched and passed on to the eureka
      * server on next heartbeat.
@@ -221,6 +253,9 @@ public class ApplicationInfoManager {
         }
     }
 
+    /**
+     * 刷新实例租约信息
+     */
     public void refreshLeaseInfoIfRequired() {
         LeaseInfo leaseInfo = instanceInfo.getLeaseInfo();
         if (leaseInfo == null) {
