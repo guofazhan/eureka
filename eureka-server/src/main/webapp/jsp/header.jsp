@@ -18,13 +18,13 @@
   }
   out.print("</h3>");
   %>
-  <h4 id="uptime"><font size="+1" color="red"><b>Environment: <%= ConfigurationManager.getDeploymentContext().getDeploymentEnvironment() %></b></font>, Data center: <%= ConfigurationManager.getDeploymentContext().getDeploymentDatacenter() %></h4>
+  <h4 id="uptime"><font size="+1" color="red"><b>环境: <%= ConfigurationManager.getDeploymentContext().getDeploymentEnvironment() %></b></font>, 数据中心: <%= ConfigurationManager.getDeploymentContext().getDeploymentDatacenter() %></h4>
   <%
   if(amazonInfo != null) {  
      out.print("<h4 id=\"uptime\">Zone: " + amazonInfo.get(AmazonInfo.MetaDataKey.availabilityZone) + ", instance-id: " + amazonInfo.get(AmazonInfo.MetaDataKey.instanceId));
   }
   %>
-  <h4 id="uptime">Current time: <%=StatusResource.getCurrentTimeAsString() %>, Uptime: <%=StatusInfo.getUpTime()%></h4>
+  <h4 id="uptime">当前时间: <%=StatusResource.getCurrentTimeAsString() %>, Uptime: <%=StatusInfo.getUpTime()%></h4>
   <hr id="uptime">Lease expiration enabled: <%=registry.isLeaseExpirationEnabled() %>, Renews threshold: <%=registry.getNumOfRenewsPerMinThreshold() %>, Renews (last min):  <%=registry.getNumOfRenewsInLastMin() %></hr>
   <% if (registry.isBelowRenewThresold() == 1) {
  	  if (!registry.isSelfPreservationModeEnabled()) {

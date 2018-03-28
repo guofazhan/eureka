@@ -53,6 +53,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         String urlPath = "apps/" + info.getAppName();
         ClientResponse response = null;
         try {
+            logger.info("注册当前实例{}到服务{}",info.getId(),serviceUrl+urlPath);
             Builder resourceBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
             addExtraHeaders(resourceBuilder);
             response = resourceBuilder
@@ -77,6 +78,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;
         try {
+            logger.info("下线当前实例{}到服务{}",id+appName,serviceUrl+urlPath);
             Builder resourceBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
             addExtraHeaders(resourceBuilder);
             response = resourceBuilder.delete(ClientResponse.class);
@@ -96,6 +98,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         String urlPath = "apps/" + appName + '/' + id;
         ClientResponse response = null;
         try {
+            logger.info("当前实例(id={},appName={},status={})发送心跳到服务{}",id,appName,info.getStatus(),serviceUrl+urlPath);
             WebResource webResource = jerseyClient.resource(serviceUrl)
                     .path(urlPath)
                     .queryParam("status", info.getStatus().toString())
@@ -126,6 +129,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         String urlPath = "apps/" + appName + '/' + id + "/status";
         ClientResponse response = null;
         try {
+            logger.info("更新当前实例(id={},appName={},status={})状态到服务{}",id,appName,newStatus,serviceUrl+urlPath);
             Builder requestBuilder = jerseyClient.resource(serviceUrl)
                     .path(urlPath)
                     .queryParam("value", newStatus.name())
@@ -190,6 +194,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         ClientResponse response = null;
         String regionsParamValue = null;
         try {
+            logger.info("获取服务列表到服务{}",serviceUrl+urlPath);
             WebResource webResource = jerseyClient.resource(serviceUrl).path(urlPath);
             if (regions != null && regions.length > 0) {
                 regionsParamValue = StringUtil.join(regions);
@@ -261,6 +266,7 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
     private EurekaHttpResponse<InstanceInfo> getInstanceInternal(String urlPath) {
         ClientResponse response = null;
         try {
+            logger.info("获取实例信息到服务{}",serviceUrl+urlPath);
             Builder requestBuilder = jerseyClient.resource(serviceUrl).path(urlPath).getRequestBuilder();
             addExtraHeaders(requestBuilder);
             response = requestBuilder.accept(MediaType.APPLICATION_JSON_TYPE).get(ClientResponse.class);

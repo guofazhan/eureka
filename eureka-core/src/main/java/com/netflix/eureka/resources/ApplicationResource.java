@@ -144,6 +144,7 @@ public class ApplicationResource {
     @Consumes({"application/json", "application/xml"})
     public Response addInstance(InstanceInfo info,
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
+        logger.info("接收远程注册的实例信息：{}(isReplication={})",info.getId(), isReplication);
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
         //校验实例ID

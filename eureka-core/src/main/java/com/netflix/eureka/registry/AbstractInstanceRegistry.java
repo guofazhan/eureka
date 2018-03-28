@@ -76,8 +76,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private static final Logger logger = LoggerFactory.getLogger(AbstractInstanceRegistry.class);
 
     private static final String[] EMPTY_STR_ARRAY = new String[0];
+    /**
+     * 注册表信息
+     * 所有应用的租约map集合 线程安全的
+     * key - appname
+     * v  - map 当前应用下所有实例的map接口
+     * -- key - instance Id
+     * --  v  - Lease 当前实例ID的租约信息
+     */
     private final ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>> registry
             = new ConcurrentHashMap<String, Map<String, Lease<InstanceInfo>>>();
+
     protected Map<String, RemoteRegionRegistry> regionNameVSRemoteRegistry = new HashMap<String, RemoteRegionRegistry>();
     protected final ConcurrentMap<String, InstanceStatus> overriddenInstanceStatusMap = CacheBuilder
             .newBuilder().initialCapacity(500)
@@ -185,6 +194,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * 注册一个信息实例信息
+     * registrant 注册的实例信息
+     * leaseDuration 租约失效检测固定时间戳
+     * isReplication 是否在集群之间同步信息
      * Registers a new instance with a given duration.
      *
      * @see com.netflix.eureka.lease.LeaseManager#register(java.lang.Object, int, boolean)
@@ -192,18 +205,24 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
         try {
             read.lock();
+            //根据给定的应用名称获取当前应用的所有实例租约map集合
             Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
             REGISTER.increment(isReplication);
             if (gMap == null) {
+                //当前应用的租约map集合为null，表示服务上无当前应用的任何实例，此时需要创建一个新的map
+                //将创建好的当前应用的租约map添加到注册表中
                 final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
                 gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
                 if (gMap == null) {
                     gMap = gNewMap;
                 }
             }
+            //获取当前实例的租约信息，在当前应用的注册表中
             Lease<InstanceInfo> existingLease = gMap.get(registrant.getId());
+
             // Retain the last dirty timestamp without overwriting it, if there is already a lease
             if (existingLease != null && (existingLease.getHolder() != null)) {
+                //租约存在
                 Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
                 Long registrationLastDirtyTimestamp = registrant.getLastDirtyTimestamp();
                 logger.debug("Existing lease found (existing={}, provided={}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
@@ -217,6 +236,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     registrant = existingLease.getHolder();
                 }
             } else {
+                //租约不存在，需要创建当前实例的新租约信息
                 // The lease does not exist and hence it is a new registration
                 synchronized (lock) {
                     if (this.expectedNumberOfRenewsPerMin > 0) {
@@ -230,8 +250,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
                 logger.debug("No previous lease information found; it is new registration");
             }
+            //创建一个新的租约信息
             Lease<InstanceInfo> lease = new Lease<InstanceInfo>(registrant, leaseDuration);
             if (existingLease != null) {
+                //复制服务的上线时间戳到新租约信息中
                 lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
             }
             gMap.put(registrant.getId(), lease);
@@ -259,6 +281,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             InstanceStatus overriddenInstanceStatus = getOverriddenInstanceStatus(registrant, existingLease, isReplication);
             registrant.setStatusWithoutDirty(overriddenInstanceStatus);
 
+            //当实例的状态为上线状态时，更新服务的上线时间戳
             // If the lease is registered with UP status, set lease service up timestamp
             if (InstanceStatus.UP.equals(registrant.getStatus())) {
                 lease.serviceUp();
@@ -340,6 +363,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * 续约给定的实例ID appname
      * Marks the given instance of the given app name as renewed, and also marks whether it originated from
      * replication.
      *
@@ -347,16 +371,21 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     public boolean renew(String appName, String id, boolean isReplication) {
         RENEW.increment(isReplication);
+        //在所有应用的租约map集合中根据appname 获取给定应用下的所有租约信息
         Map<String, Lease<InstanceInfo>> gMap = registry.get(appName);
         Lease<InstanceInfo> leaseToRenew = null;
         if (gMap != null) {
+            //在给定应用的所有实例租约map中获取给定实例的租约信息
             leaseToRenew = gMap.get(id);
         }
+
         if (leaseToRenew == null) {
+            //租约信息为null ，直接返回
             RENEW_NOT_FOUND.increment(isReplication);
             logger.warn("DS: Registry: lease doesn't exist, registering resource: {} - {}", appName, id);
             return false;
         } else {
+            //在租约信息中获取持有当前租约的实例信息
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
@@ -379,6 +408,8 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
             renewsLastMin.increment();
+            //更新服务最后更新的时间戳 （当前时间+给定定时）
+            //最后更新时间=服务最后一次心跳时间+定时（默认90s）
             leaseToRenew.renew();
             return true;
         }
