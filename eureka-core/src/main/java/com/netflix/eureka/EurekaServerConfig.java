@@ -39,6 +39,7 @@ import java.util.Set;
 public interface EurekaServerConfig {
 
     /**
+     * AWS使用
      * Gets the <em>AWS Access Id</em>. This is primarily used for
      * <em>Elastic IP Biding</em>. The access id should be provided with
      * appropriate AWS permissions to bind the EIP.
@@ -48,6 +49,7 @@ public interface EurekaServerConfig {
     String getAWSAccessId();
 
     /**
+     * AWS使用
      * Gets the <em>AWS Secret Key</em>. This is primarily used for
      * <em>Elastic IP Biding</em>. The access id should be provided with
      * appropriate AWS permissions to bind the EIP.
@@ -57,6 +59,7 @@ public interface EurekaServerConfig {
     String getAWSSecretKey();
 
     /**
+     * AWS 使用
      * Gets the number of times the server should try to bind to the candidate
      * EIP.
      *
@@ -70,6 +73,7 @@ public interface EurekaServerConfig {
     int getEIPBindRebindRetries();
 
     /**
+     * AWS 使用
      * Get the interval with which the server should check if the EIP is bound
      * and should try to bind in the case if it is already not bound, iff the EIP
      * is not currently bound.
@@ -82,6 +86,7 @@ public interface EurekaServerConfig {
     int getEIPBindingRetryIntervalMsWhenUnbound();
 
     /**
+     * AWS 使用
      * Gets the interval with which the server should check if the EIP is bound
      * and should try to bind in the case if it is already not bound, iff the EIP
      * is already bound. (so this refresh is just for steady state checks)
@@ -94,6 +99,10 @@ public interface EurekaServerConfig {
     int getEIPBindingRetryIntervalMs();
 
     /**
+     * 是否开启自我保护模式。
+     * 当Eureka Server节点在短时间内丢失过多客户端时（可能发生了网络分区故障），那么这个节点就会进入自我保护模式。
+     * 一旦进入该模式，Eureka Server就会保护服务注册表中的信息，不再删除服务注册表中的数据（也就是不会注销任何微服务）。
+     * 当网络故障恢复后，该Eureka Server节点会自动退出自我保护模式。
      * Checks to see if the eureka server is enabled for self preservation.
      *
      * <p>
@@ -112,6 +121,7 @@ public interface EurekaServerConfig {
     boolean shouldEnableSelfPreservation();
 
     /**
+     *  开启自我保护模式比例，超过该比例后开启自我保护模式。
      * The minimum percentage of renewals that is expected from the clients in
      * the period specified by {@link #getRenewalThresholdUpdateIntervalMs()}.
      * If the renewals drop below the threshold, the expirations are disabled if
@@ -127,6 +137,7 @@ public interface EurekaServerConfig {
     double getRenewalPercentThreshold();
 
     /**
+     * 自我保护模式比例更新频率，单位：毫秒。
      * The interval with which the threshold as specified in
      * {@link #getRenewalPercentThreshold()} needs to be updated.
      *
@@ -135,6 +146,7 @@ public interface EurekaServerConfig {
     int getRenewalThresholdUpdateIntervalMs();
 
     /**
+     * Eureka-Server 集群节点更新频率，单位：毫秒。
      * The interval with which the information about the changes in peer eureka
      * nodes is updated. The user can use the DNS mechanism or dynamic
      * configuration provided by <a href="https://github.com/Netflix/archaius">Archaius</a> to
@@ -148,6 +160,7 @@ public interface EurekaServerConfig {
     int getPeerEurekaNodesUpdateIntervalMs();
 
     /**
+     * 是否开启 Eureka-Server 集群间请求压缩
      * If set to true, the replicated data send in the request will be always compressed.
      * This does not define response path, which is driven by "Accept-Encoding" header.
      */
@@ -176,6 +189,7 @@ public interface EurekaServerConfig {
     int getPeerEurekaStatusRefreshTimeIntervalMs();
 
     /**
+     * Eureka-Server 启动时，从远程 Eureka-Server 读取不到注册信息时，多长时间不允许 Eureka-Client 访问。
      * Gets the time to wait when the eureka server starts up unable to get
      * instances from peer nodes. It is better not to start serving rightaway
      * during these scenarios as the information that is stored in the registry
@@ -190,6 +204,7 @@ public interface EurekaServerConfig {
     int getWaitTimeInMsWhenSyncEmpty();
 
     /**
+     * 远程 Eureka-Server 请求连接超时时间，单位：毫秒
      * Gets the timeout value for connecting to peer eureka nodes for
      * replication.
      *
@@ -198,6 +213,7 @@ public interface EurekaServerConfig {
     int getPeerNodeConnectTimeoutMs();
 
     /**
+     * 远程 Eureka-Server 请求读取超时时间，单位：毫秒
      * Gets the timeout value for reading information from peer eureka nodes for
      * replication.
      *
@@ -206,6 +222,7 @@ public interface EurekaServerConfig {
     int getPeerNodeReadTimeoutMs();
 
     /**
+     * 全部远程 Eureka-Server 请求总连接数
      * Gets the total number of <em>HTTP</em> connections allowed to peer eureka
      * nodes for replication.
      *
@@ -214,6 +231,7 @@ public interface EurekaServerConfig {
     int getPeerNodeTotalConnections();
 
     /**
+     * 单个远程 Eureka-Server 请求总连接数
      * Gets the total number of <em>HTTP</em> connections allowed to a
      * particular peer eureka node for replication.
      *
@@ -223,6 +241,7 @@ public interface EurekaServerConfig {
     int getPeerNodeTotalConnectionsPerHost();
 
     /**
+     * 远程 Eureka-Server 请求空闲超时时间，单位：毫秒
      * Gets the idle time after which the <em>HTTP</em> connection should be
      * cleaned up.
      *
@@ -595,6 +614,7 @@ public interface EurekaServerConfig {
     Set<String> getRateLimiterPrivilegedClients();
 
     /**
+     *
      * Rate limiter, token bucket algorithm property. See also {@link #getRateLimiterRegistryFetchAverageRate()}
      * and {@link #getRateLimiterFullFetchAverageRate()}.
      */

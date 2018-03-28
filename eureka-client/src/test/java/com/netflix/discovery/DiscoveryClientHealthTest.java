@@ -72,7 +72,7 @@ public class DiscoveryClientHealthTest extends AbstractDiscoveryClientTester {
         DiscoveryClient clientImpl = (DiscoveryClient) client;
 
         InstanceInfoReplicator instanceInfoReplicator = clientImpl.getInstanceInfoReplicator();
-
+        System.out.println("应用实例状态:" + clientImpl.getInstanceInfo().getStatus());
         Assert.assertEquals("Instance info status not as expected.", InstanceInfo.InstanceStatus.STARTING,
                 clientImpl.getInstanceInfo().getStatus());
 

@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * 应用实例信息复制器
  * A task for updating and replicating the local instanceinfo to the remote server. Properties of this task are:
  * - configured with a single update thread to guarantee sequential update to the remote server
  * - update tasks can be scheduled on-demand via onDemandUpdate()
@@ -28,7 +29,13 @@ import java.util.concurrent.atomic.AtomicReference;
 class InstanceInfoReplicator implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(InstanceInfoReplicator.class);
 
+    /**
+     * eureka Client
+     */
     private final DiscoveryClient discoveryClient;
+    /**
+     * 应用的当前实例信息
+     */
     private final InstanceInfo instanceInfo;
 
     private final int replicationIntervalSeconds;

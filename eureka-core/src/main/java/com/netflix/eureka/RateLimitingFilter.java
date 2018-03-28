@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 请求限流过滤器
  * Rate limiting filter, with configurable threshold above which non-privileged clients
  * will be dropped. This feature enables cutting off non-standard and potentially harmful clients
  * in case of system overload. Since it is critical to always allow client registrations and heartbeats into

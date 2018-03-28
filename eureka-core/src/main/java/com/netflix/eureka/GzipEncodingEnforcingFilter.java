@@ -17,6 +17,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * GZIP 编码过滤器
  * Originally Eureka supported non-compressed responses only. For large registries it was extremely
  * inefficient, so gzip encoding was added. As nowadays all modern HTTP clients support gzip HTTP response
  * transparently, there is no longer need to maintain uncompressed content. By adding this filter, Eureka

@@ -130,12 +130,13 @@ public class ApplicationResource {
     }
 
     /**
+     * 接收 eureka Client 发送的instance info 注册到eureka Server
      * Registers information about a particular instance for an
      * {@link com.netflix.discovery.shared.Application}.
      *
-     * @param info
+     * @param info instance info
      *            {@link InstanceInfo} information of the instance.
-     * @param isReplication
+     * @param isReplication 是否在 eureka Server集群复制
      *            a header parameter containing information whether this is
      *            replicated from other nodes.
      */
@@ -145,18 +146,25 @@ public class ApplicationResource {
                                 @HeaderParam(PeerEurekaNode.HEADER_REPLICATION) String isReplication) {
         logger.debug("Registering instance {} (replication={})", info.getId(), isReplication);
         // validate that the instanceinfo contains all the necessary required fields
+        //校验实例ID
         if (isBlank(info.getId())) {
             return Response.status(400).entity("Missing instanceId").build();
+            //校验实例hostname
         } else if (isBlank(info.getHostName())) {
             return Response.status(400).entity("Missing hostname").build();
+            //校验实例ip
         } else if (isBlank(info.getIPAddr())) {
             return Response.status(400).entity("Missing ip address").build();
+            //校验实例appname
         } else if (isBlank(info.getAppName())) {
             return Response.status(400).entity("Missing appName").build();
+            //校验实例appname
         } else if (!appName.equals(info.getAppName())) {
             return Response.status(400).entity("Mismatched appName, expecting " + appName + " but was " + info.getAppName()).build();
+        //校验实例DataCenter
         } else if (info.getDataCenterInfo() == null) {
             return Response.status(400).entity("Missing dataCenterInfo").build();
+            //校验实例DataCenter Name
         } else if (info.getDataCenterInfo().getName() == null) {
             return Response.status(400).entity("Missing dataCenterInfo Name").build();
         }
@@ -182,6 +190,7 @@ public class ApplicationResource {
             }
         }
 
+        //应用对象注册表接口 注册当前的instance Info
         registry.register(info, "true".equals(isReplication));
         return Response.status(204).build();  // 204 to be backwards compatible
     }

@@ -31,6 +31,14 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 
 /**
+ * Eureka-Server 过滤器( javax.servlet.Filter ) 顺序如下：
+ *  StatusFilter
+ *  ServerRequestAuthFilter
+ *  RateLimitingFilter
+ *  GzipEncodingEnforcingFilter
+ *  ServletContainer
+ *  Eureka-Server 状态过滤器。
+ *  当 Eureka-Server 未处于开启( InstanceStatus.UP )状态，返回 HTTP 状态码 307 重定向
  * Filter to check whether the eureka server is ready to take requests based on
  * its {@link InstanceStatus}.
  */
@@ -57,8 +65,11 @@ public class StatusFilter implements Filter {
      */
     public void doFilter(ServletRequest request, ServletResponse response,
                          FilterChain chain) throws IOException, ServletException {
+        //获取当前实例信息
         InstanceInfo myInfo = ApplicationInfoManager.getInstance().getInfo();
+        //获取实例状态信息
         InstanceStatus status = myInfo.getStatus();
+        //当状态!= InstanceStatus.UP 返回http code 307
         if (status != InstanceStatus.UP && response instanceof HttpServletResponse) {
             HttpServletResponse httpRespone = (HttpServletResponse) response;
             httpRespone.sendError(SC_TEMPORARY_REDIRECT,

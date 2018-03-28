@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 import static com.netflix.eureka.util.EurekaMonitors.*;
 
 /**
+ * 应用对象注册表抽象实现
  * Handles all registry requests from eureka clients.
  *
  * <p>

@@ -22,22 +22,51 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
 
 /**
+ * eureka server 上下文环境信息
  * @author David Liu
  */
 public interface EurekaServerContext {
 
+    /**
+     * 初始化方法
+     * @throws Exception
+     */
     void initialize() throws Exception;
 
+    /**
+     * 关闭
+     * @throws Exception
+     */
     void shutdown() throws Exception;
 
+    /**
+     * 获取 eureka server配置信息
+     * @return
+     */
     EurekaServerConfig getServerConfig();
 
+    /**
+     * Eureka-Server 集群节点集合
+     * @return
+     */
     PeerEurekaNodes getPeerEurekaNodes();
 
+    /**
+     * Eureka-Server 请求和响应编解码器
+     * @return
+     */
     ServerCodecs getServerCodecs();
 
+    /**
+     *  Eureka-Server 应用对象信息的注册表
+     * @return
+     */
     PeerAwareInstanceRegistry getRegistry();
 
+    /**
+     * Eureka-Server  应用信息管理器
+     * @return
+     */
     ApplicationInfoManager getApplicationInfoManager();
 
 }

@@ -29,9 +29,13 @@ public class InstanceInfoTest {
 
     // contrived test to check copy constructor and verify behavior of builder for InstanceInfo
 
+    /**
+     * 测试通过构造函数copy
+     */
     @Test
     public void testCopyConstructor() {
 
+        //数据中心
         DataCenterInfo myDCI = new DataCenterInfo() {
 
             public DataCenterInfo.Name getName() {
@@ -97,19 +101,26 @@ public class InstanceInfoTest {
 
         // No health check URLs
         InstanceInfo noHealtcheckInstanceInfo = builder.build();
+        System.out.println(";;;;;" + noHealtcheckInstanceInfo.getHealthCheckUrls());
+
         assertThat(noHealtcheckInstanceInfo.getHealthCheckUrls().size(), is(equalTo(0)));
 
         // Now when health check is defined
         InstanceInfo instanceInfo = builder
                 .setHealthCheckUrls("/healthcheck", "http://${eureka.hostname}/healthcheck", "https://${eureka.hostname}/healthcheck")
                 .build();
+        System.out.println("-----" + instanceInfo.getHealthCheckUrls());
         assertThat(instanceInfo.getHealthCheckUrls().size(), is(equalTo(2)));
     }
 
     @Test
     public void testGetIdWithInstanceIdUsed() {
         InstanceInfo baseline = InstanceInfoGenerator.takeOne();
+
+
         String dataCenterInfoId = ((UniqueIdentifier) baseline.getDataCenterInfo()).getId();
+        System.out.println("dataCenterInfoId:" + dataCenterInfoId);
+        System.out.println("InstanceId:" + baseline.getInstanceId());
         assertThat(baseline.getInstanceId(), is(baseline.getId()));
         assertThat(dataCenterInfoId, is(baseline.getId()));
 

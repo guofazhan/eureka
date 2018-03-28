@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 应用实例注册表接口。
+ * 它继承了 LookupService 、LeaseManager 接口，提供应用实例的注册与发现服务。
+ * 另外，它结合实际业务场景，定义了更加丰富的接口方法
  * @author Tomasz Bak
  */
 public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupService<String> {
@@ -72,18 +75,45 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
 
     void clearRegistry();
 
+    /**
+     * 初始化响应缓存信息
+     */
     void initializedResponseCache();
 
+    /**
+     * 获取响应缓存信息
+     * @return
+     */
     ResponseCache getResponseCache();
 
+    /**
+     *
+     * @return
+     */
     long getNumOfRenewsInLastMin();
 
+    /**
+     *
+     * @return
+     */
     int getNumOfRenewsPerMinThreshold();
 
+    /**
+     *
+     * @return
+     */
     int isBelowRenewThresold();
 
+    /**
+     *
+     * @return
+     */
     List<Pair<Long, String>> getLastNRegisteredInstances();
 
+    /**
+     *
+     * @return
+     */
     List<Pair<Long, String>> getLastNCanceledInstances();
 
     /**
@@ -92,6 +122,10 @@ public interface InstanceRegistry extends LeaseManager<InstanceInfo>, LookupServ
      */
     boolean isLeaseExpirationEnabled();
 
+    /**
+     *
+     * @return
+     */
     boolean isSelfPreservationModeEnabled();
 
 }

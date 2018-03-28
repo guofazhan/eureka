@@ -37,7 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * 基于配置文件的 Eureka-Server 配置实现类
  * A default implementation of eureka server configuration as required by
  * {@link EurekaServerConfig}.
  *
@@ -62,17 +62,32 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class DefaultEurekaServerConfig implements EurekaServerConfig {
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
+    /**
+     * 环境信息，默认test
+     */
     private static final String TEST = "test";
+    /**
+     * 环境变量key
+     */
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
     private static final Logger logger = LoggerFactory
             .getLogger(DefaultEurekaServerConfig.class);
+    /**
+     *  配置文件对象
+     */
     private static final DynamicPropertyFactory configInstance = com.netflix.config.DynamicPropertyFactory
             .getInstance();
+    /**
+     * 配置文件 默认配置文件名称为 eureka-server
+     */
     private static final DynamicStringProperty EUREKA_PROPS_FILE = DynamicPropertyFactory
             .getInstance().getStringProperty("eureka.server.props",
                     "eureka-server");
     private static final int TIME_TO_WAIT_FOR_REPLICATION = 30000;
 
+    /**
+     * 命名空间
+     */
     private String namespace = "eureka.";
 
     // These counters are checked for each HTTP request. Instantiating them per request like for the other
@@ -93,20 +108,24 @@ public class DefaultEurekaServerConfig implements EurekaServerConfig {
     }
 
     public DefaultEurekaServerConfig(String namespace) {
+        //初始化名称空间
         this.namespace = namespace;
         init();
     }
 
     private void init() {
+        //获取服务环境信息
         String env = ConfigurationManager.getConfigInstance().getString(
                 EUREKA_ENVIRONMENT, TEST);
         ConfigurationManager.getConfigInstance().setProperty(
                 ARCHAIUS_DEPLOYMENT_ENVIRONMENT, env);
 
+        //获取配置文件名称
         String eurekaPropsFile = EUREKA_PROPS_FILE.get();
         try {
             // ConfigurationManager
             // .loadPropertiesFromResources(eurekaPropsFile);
+            //加载配置文件
             ConfigurationManager
                     .loadCascadedPropertiesFromResources(eurekaPropsFile);
         } catch (IOException e) {

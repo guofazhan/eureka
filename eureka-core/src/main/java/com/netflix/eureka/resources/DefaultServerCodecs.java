@@ -11,6 +11,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
+ * Eureka-Server 请求和响应编解码器 默认实现
  * @author David Liu
  */
 @Singleton

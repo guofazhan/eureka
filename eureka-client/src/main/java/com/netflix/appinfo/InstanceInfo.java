@@ -775,6 +775,7 @@ public class InstanceInfo {
             result.healthCheckExplicitUrl = explicitUrl;
             result.healthCheckSecureExplicitUrl = secureExplicitUrl;
             if (explicitUrl != null) {
+                //将健康检测（http）URL中的${eureka.hostname} 替换成真实hostName
                 result.healthCheckUrl = explicitUrl.replace(
                         hostNameInterpolationExpression, result.hostName);
             } else if (result.isUnsecurePortEnabled) {
@@ -783,6 +784,7 @@ public class InstanceInfo {
             }
 
             if (secureExplicitUrl != null) {
+                //将健康检测（https）URL中的${eureka.hostname} 替换成真实hostName
                 result.secureHealthCheckUrl = secureExplicitUrl.replace(
                         hostNameInterpolationExpression, result.hostName);
             } else if (result.isSecurePortEnabled) {

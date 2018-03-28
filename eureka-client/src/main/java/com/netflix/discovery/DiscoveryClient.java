@@ -232,10 +232,13 @@ public class DiscoveryClient implements EurekaClient {
     protected final EurekaTransportConfig transportConfig;
 
     /**
-     * 初始化时间戳
+     * 初始化完成时间戳
      */
     private final long initTimestampMs;
 
+    /**
+     * 远程通信组件类
+     */
     private static final class EurekaTransport {
         private ClosableResolver bootstrapResolver;
         private TransportClientFactory transportClientFactory;
@@ -273,6 +276,9 @@ public class DiscoveryClient implements EurekaClient {
         }
     }
 
+    /**
+     * 远程通信组件参数类
+     */
     public static class DiscoveryClientOptionalArgs extends Jersey1DiscoveryClientOptionalArgs {
 
     }

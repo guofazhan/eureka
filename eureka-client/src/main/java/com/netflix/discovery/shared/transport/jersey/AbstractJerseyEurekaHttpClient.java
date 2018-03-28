@@ -42,6 +42,12 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         logger.debug("Created client for url: {}", serviceUrl);
     }
 
+    /**
+     * eureka client 将 instanceInfo 注册到eureka Server端
+     * 通过 HTTP(S) 请求地址为 apps/appname
+     * @param info
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Void> register(InstanceInfo info) {
         String urlPath = "apps/" + info.getAppName();

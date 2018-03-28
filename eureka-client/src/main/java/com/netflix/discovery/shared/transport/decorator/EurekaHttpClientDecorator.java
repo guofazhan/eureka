@@ -28,10 +28,16 @@ import com.netflix.discovery.shared.transport.EurekaHttpResponse;
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
+    /**
+     * 通信请求类型
+     */
     public enum RequestType {
+        //注册
         Register,
         Cancel,
+        //发送心跳
         SendHeartBeat,
+        //状态更新
         StatusUpdate,
         DeleteStatusOverride,
         GetApplications,
@@ -39,6 +45,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         GetVip,
         GetSecureVip,
         GetApplication,
+        //获取实例
         GetInstance,
         GetApplicationInstance
     }

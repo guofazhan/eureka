@@ -50,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Eureka Server 启动类，集成与WEB容器
  * The class that kick starts the eureka server.
  *
  * <p>
@@ -67,19 +68,37 @@ import org.slf4j.LoggerFactory;
 public class EurekaBootStrap implements ServletContextListener {
     private static final Logger logger = LoggerFactory.getLogger(EurekaBootStrap.class);
 
+    /**
+     * 部署环境 - 测服
+     */
     private static final String TEST = "test";
 
     private static final String ARCHAIUS_DEPLOYMENT_ENVIRONMENT = "archaius.deployment.environment";
 
+    /**
+     * 环境信息配置KEY
+     */
     private static final String EUREKA_ENVIRONMENT = "eureka.environment";
 
+    /**
+     * 部署数据中心 - CLOUD
+     */
     private static final String CLOUD = "cloud";
+    /**
+     * 部署数据中心 - 默认
+     */
     private static final String DEFAULT = "default";
 
     private static final String ARCHAIUS_DEPLOYMENT_DATACENTER = "archaius.deployment.datacenter";
 
+    /**
+     * 数据中心配置KEY
+     */
     private static final String EUREKA_DATACENTER = "eureka.datacenter";
 
+    /**
+     * eureka SERVER 上下文环境信息
+     */
     protected volatile EurekaServerContext serverContext;
     protected volatile AwsBinder awsBinder;
     
@@ -110,7 +129,9 @@ public class EurekaBootStrap implements ServletContextListener {
     @Override
     public void contextInitialized(ServletContextEvent event) {
         try {
+            //初始化 环境信息
             initEurekaEnvironment();
+            //初始化 Eureka-Server 上下文
             initEurekaServerContext();
 
             ServletContext sc = event.getServletContext();
@@ -122,11 +143,13 @@ public class EurekaBootStrap implements ServletContextListener {
     }
 
     /**
+     * 初始化 Eureka Server 环境信息
      * Users can override to initialize the environment themselves.
      */
     protected void initEurekaEnvironment() throws Exception {
         logger.info("Setting the eureka configuration..");
 
+        //获取数据中心配置
         String dataCenter = ConfigurationManager.getConfigInstance().getString(EUREKA_DATACENTER);
         if (dataCenter == null) {
             logger.info("Eureka data center value eureka.datacenter is not set, defaulting to default");
@@ -134,6 +157,9 @@ public class EurekaBootStrap implements ServletContextListener {
         } else {
             ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_DATACENTER, dataCenter);
         }
+        //获取环境信息配置
+        //设置基于 Netflix Archaius 实现的配置文件的上下文，从而读取合适的配置文件。
+        // 大多数情况下，只需要设置 EUREKA_ENVIRONMENT 即可，不同的服务器环境( 例如，PROD / TEST 等) 读取不同的配置文件
         String environment = ConfigurationManager.getConfigInstance().getString(EUREKA_ENVIRONMENT);
         if (environment == null) {
             ConfigurationManager.getConfigInstance().setProperty(ARCHAIUS_DEPLOYMENT_ENVIRONMENT, TEST);
@@ -142,21 +168,25 @@ public class EurekaBootStrap implements ServletContextListener {
     }
 
     /**
+     * 初始化 Eureka Server 上下文环境
      * init hook for server context. Override for custom logic.
      */
     protected void initEurekaServerContext() throws Exception {
+        // 【2.2.1】创建 Eureka-Server 配置
         EurekaServerConfig eurekaServerConfig = new DefaultEurekaServerConfig();
 
+        // 【2.2.2】Eureka-Server 请求和响应的数据兼容
         // For backward compatibility
         JsonXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
         XmlXStream.getInstance().registerConverter(new V1AwareInstanceInfoConverter(), XStream.PRIORITY_VERY_HIGH);
 
+        // 【2.2.3】创建 Eureka-Server 请求和响应编解码器
         logger.info("Initializing the eureka client...");
         logger.info(eurekaServerConfig.getJsonCodecName());
         ServerCodecs serverCodecs = new DefaultServerCodecs(eurekaServerConfig);
 
         ApplicationInfoManager applicationInfoManager = null;
-
+        // 【2.2.4】创建 Eureka-Client
         if (eurekaClient == null) {
             EurekaInstanceConfig instanceConfig = isCloud(ConfigurationManager.getDeploymentContext())
                     ? new CloudInstanceConfig()
@@ -166,11 +196,13 @@ public class EurekaBootStrap implements ServletContextListener {
                     instanceConfig, new EurekaConfigBasedInstanceInfoProvider(instanceConfig).get());
             
             EurekaClientConfig eurekaClientConfig = new DefaultEurekaClientConfig();
+            //Eureka-Server 内嵌 Eureka-Client，用于和 Eureka-Server 集群里其他节点通信交互
             eurekaClient = new DiscoveryClient(applicationInfoManager, eurekaClientConfig);
         } else {
             applicationInfoManager = eurekaClient.getApplicationInfoManager();
         }
 
+        // 【2.2.5】创建 应用对象信息的注册表
         PeerAwareInstanceRegistry registry;
         if (isAws(applicationInfoManager.getInfo())) {
             registry = new AwsInstanceRegistry(
@@ -190,6 +222,7 @@ public class EurekaBootStrap implements ServletContextListener {
             );
         }
 
+        // 【2.2.6】创建 Eureka-Server 集群节点集合
         PeerEurekaNodes peerEurekaNodes = getPeerEurekaNodes(
                 registry,
                 eurekaServerConfig,
@@ -197,7 +230,7 @@ public class EurekaBootStrap implements ServletContextListener {
                 serverCodecs,
                 applicationInfoManager
         );
-
+        // 【2.2.7】创建 Eureka-Server 上下文
         serverContext = new DefaultEurekaServerContext(
                 eurekaServerConfig,
                 serverCodecs,
@@ -206,15 +239,17 @@ public class EurekaBootStrap implements ServletContextListener {
                 applicationInfoManager
         );
 
+        // 【2.2.8】初始化 EurekaServerContextHolder
         EurekaServerContextHolder.initialize(serverContext);
-
+        // 【2.2.9】初始化 Eureka-Server 上下文
         serverContext.initialize();
         logger.info("Initialized server context");
 
+        // 【2.2.10】从其他 Eureka-Server 拉取注册信息
         // Copy registry from neighboring eureka node
         int registryCount = registry.syncUp();
         registry.openForTraffic(applicationInfoManager, registryCount);
-
+        // 【2.2.11】注册监控
         // Register all monitoring statistics.
         EurekaMonitors.registerAllStats();
     }
