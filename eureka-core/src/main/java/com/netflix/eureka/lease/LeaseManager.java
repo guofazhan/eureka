@@ -77,7 +77,7 @@ public interface LeaseManager<T> {
     boolean renew(String appName, String id, boolean isReplication);
 
     /**
-     * 服务剔除( 过期下线）
+     * 过期租约剔除 定时任务执行
      * Evict {@link T}s with expired {@link Lease}(s).
      */
     void evict();

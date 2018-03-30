@@ -23,18 +23,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 速度测量类 用于测量给定时间间隔执行的次数
  * Utility class for getting a count in last X milliseconds.
  *
  * @author Karthik Ranganathan,Greg Kim
  */
 public class MeasuredRate {
     private static final Logger logger = LoggerFactory.getLogger(MeasuredRate.class);
+    /**
+     * 上一个间隔次数
+     */
     private final AtomicLong lastBucket = new AtomicLong(0);
+    /**
+     * 当前间隔次数
+     */
     private final AtomicLong currentBucket = new AtomicLong(0);
 
+    /**
+     * 间隔
+     */
     private final long sampleInterval;
+    /**
+     *定时器
+     */
     private final Timer timer;
 
+    /**
+     * 是否活动
+     */
     private volatile boolean isActive;
 
     /**
@@ -73,6 +89,7 @@ public class MeasuredRate {
     }
 
     /**
+     * 返回上一个时间间隔的调用次数
      * Returns the count in the last sample interval.
      */
     public long getCount() {
@@ -80,6 +97,7 @@ public class MeasuredRate {
     }
 
     /**
+     *
      * Increments the count in the current sample interval.
      */
     public void increment() {

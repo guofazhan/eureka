@@ -12,6 +12,9 @@ final class PropertyBasedClientConfigConstants {
     // NOTE: all keys are before any prefixes are applied
     static final String CLIENT_REGION_KEY = "region";
 
+    /**
+     * 是否注册自己到server端
+     */
     static final String REGISTRATION_ENABLED_KEY = "registration.enabled";
     static final String FETCH_REGISTRY_ENABLED_KEY = "shouldFetchRegistry";
 
@@ -23,6 +26,9 @@ final class PropertyBasedClientConfigConstants {
     static final String CACHEREFRESH_THREADPOOL_SIZE_KEY = "client.cacheRefresh.threadPoolSize";
     static final String CACHEREFRESH_BACKOFF_BOUND_KEY = "client.cacheRefresh.exponentialBackOffBound";
 
+    /**
+     * 是否在关闭时通知server下线当前实例
+     */
     static final String SHOULD_UNREGISTER_ON_SHUTDOWN_KEY = "shouldUnregisterOnShutdown";
     static final String SHOULD_ONDEMAND_UPDATE_STATUS_KEY = "shouldOnDemandUpdateStatusChange";
     static final String SHOULD_ENFORCE_REGISTRATION_AT_INIT = "shouldEnforceRegistrationAtInit";

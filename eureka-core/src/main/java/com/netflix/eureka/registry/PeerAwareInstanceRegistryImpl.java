@@ -150,6 +150,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         this.numberOfReplicationsLastMin.start();
         this.peerEurekaNodes = peerEurekaNodes;
         initializedResponseCache();
+        //启动自我保护机制数据重置定时任务
         scheduleRenewalThresholdUpdateTask();
         initRemoteRegionRegistry();
 
@@ -181,6 +182,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     }
 
     /**
+     * 定时任务，定时完成自我保护机制数据重置
      * Schedule the task that updates <em>renewal threshold</em> periodically.
      * The renewal threshold would be used to determine if the renewals drop
      * dramatically because of network partition and to protect expiring too
@@ -188,9 +190,13 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
      *
      */
     private void scheduleRenewalThresholdUpdateTask() {
+        // 	schedule(TimerTask task, long delay, long period)
+        //          安排指定的任务从指定的延迟后开始进行重复的固定延迟执行。
+        //配置 eureka.renewalThresholdUpdateIntervalMs 参数，定时重新计算。默认，15 分钟。
         timer.schedule(new TimerTask() {
                            @Override
                            public void run() {
+                               //重置自我保护数据方法
                                updateRenewalThreshold();
                            }
                        }, serverConfig.getRenewalThresholdUpdateIntervalMs(),
@@ -235,8 +241,22 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
 
     @Override
     public void openForTraffic(ApplicationInfoManager applicationInfoManager, int count) {
+        //服务启动初始化自我保护机制参数数据
+
         // Renewals happen every 30 seconds and for a minute it should be a factor of 2.
+        // expectedNumberOfRenewsPerMin = 当前注册的应用实例数 x 2
+        //为什么乘以 2
+        //默认情况下，注册的应用实例每半分钟续租一次，那么一分钟心跳两次，因此 x 2 。
+        //这块会有一些硬编码的情况，因此不太建议修改应用实例的续租频率。
+        //count 是同步其它server节点获取的注册实例数
         this.expectedNumberOfRenewsPerMin = count * 2;
+        //expectedNumberOfRenewsPerMin * 续租百分比( eureka.renewalPercentThreshold )
+        //为什么乘以续租百分比
+        //
+        //低于这个百分比，意味着开启自我保护机制。
+        //默认情况下，eureka.renewalPercentThreshold = 0.85 。
+        //如果你真的调整了续租频率，可以等比去续租百分比，以保证合适的触发自我保护机制的阀值。
+        //另外，你需要注意，续租频率是 Client 级别，续租百分比是 Server 级别。
         this.numberOfRenewsPerMinThreshold =
                 (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
         logger.info("Got {} instances from neighboring DS node", count);
@@ -377,6 +397,8 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
                           final boolean isReplication) {
         if (super.cancel(appName, id, isReplication)) {
             replicateToPeers(Action.Cancel, appName, id, null, null, isReplication);
+            //实例下线，重新计算expectedNumberOfRenewsPerMin，numberOfRenewsPerMinThreshold值
+            // 减少 一个实例的信息
             synchronized (lock) {
                 if (this.expectedNumberOfRenewsPerMin > 0) {
                     // Since the client wants to cancel it, reduce the threshold (1 for 30 seconds, 2 for a minute)
@@ -476,16 +498,23 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
         }
     }
 
+    /**
+     * 判断是否开启自我保护机制
+     * @return
+     */
     @Override
     public boolean isLeaseExpirationEnabled() {
         if (!isSelfPreservationModeEnabled()) {
             // The self preservation mode is disabled, hence allowing the instances to expire.
             return true;
         }
+        // 单个实例默认30s一次心跳，一分中为2次心跳
+        //getNumOfRenewsInLastMin() 上一个时间段续租数
         return numberOfRenewsPerMinThreshold > 0 && getNumOfRenewsInLastMin() > numberOfRenewsPerMinThreshold;
     }
 
     /**
+     *  自我保护机制开关 默认true
      * Checks to see if the self-preservation mode is enabled.
      *
      * <p>
@@ -513,6 +542,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     }
 
     /**
+     * 重置自我保护数据方法，定时任务定时执行
      * Updates the <em>renewal threshold</em> based on the current number of
      * renewals. The threshold is a percentage as specified in
      * {@link EurekaServerConfig#getRenewalPercentThreshold()} of renewals
@@ -521,6 +551,7 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
     private void updateRenewalThreshold() {
         try {
             Applications apps = eurekaClient.getApplications();
+            //计算注册的总实例数
             int count = 0;
             for (Application app : apps.getRegisteredApplications()) {
                 for (InstanceInfo instance : app.getInstances()) {
@@ -532,9 +563,16 @@ public class PeerAwareInstanceRegistryImpl extends AbstractInstanceRegistry impl
             synchronized (lock) {
                 // Update threshold only if the threshold is greater than the
                 // current expected threshold of if the self preservation is disabled.
+                // !this.isSelfPreservationModeEnabled() ：当未开启自我保护机制时，每次都进行重新计算
+                // (count * 2) > (serverConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold) ：
+                // 当开启自我保护机制时，应用实例每分钟最大心跳数( count * 2 )
+                // 大于期望最小每分钟续租次数( serverConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold )，重新计算。
+                // 如果重新计算，自动保护机制会每次定时执行后失效。
                 if ((count * 2) > (serverConfig.getRenewalPercentThreshold() * numberOfRenewsPerMinThreshold)
                         || (!this.isSelfPreservationModeEnabled())) {
+                    //期望最大每分钟续租次数 自我保护机制使用
                     this.expectedNumberOfRenewsPerMin = count * 2;
+                    //期望最小每分钟续租次数  自我保护机制使用
                     this.numberOfRenewsPerMinThreshold = (int) ((count * 2) * serverConfig.getRenewalPercentThreshold());
                 }
             }

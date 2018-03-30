@@ -981,13 +981,17 @@ public class DiscoveryClient implements EurekaClient {
                 applicationInfoManager.unregisterStatusChangeListener(statusChangeListener.getId());
             }
 
+            //取消，关闭定时任务线程
             cancelScheduledTasks();
 
+            //eureka.registration.enabled = true 且eureka.shouldUnregisterOnShutdown = true条件成立时
+			// 向 eureka server端发起客户端下线请求
             // If APPINFO was registered
             if (applicationInfoManager != null
                     && clientConfig.shouldRegisterWithEureka()
                     && clientConfig.shouldUnregisterOnShutdown()) {
                 applicationInfoManager.setInstanceStatus(InstanceStatus.DOWN);
+                //发起下线请求
                 unregister();
             }
 

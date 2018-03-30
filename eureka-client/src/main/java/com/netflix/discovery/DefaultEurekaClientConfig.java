@@ -296,6 +296,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     /*
+     * 是否在客户端启动时，注册自己到server端
      * (non-Javadoc)
      *
      * @see
@@ -308,6 +309,7 @@ public class DefaultEurekaClientConfig implements EurekaClientConfig {
     }
 
     /*
+     * 是否在当前客户端关闭时通知server端下线服务 默认true
      * (non-Javadoc)
      *
      * @see

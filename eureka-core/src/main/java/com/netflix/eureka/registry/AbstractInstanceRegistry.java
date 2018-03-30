@@ -101,6 +101,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final ReentrantReadWriteLock readWriteLock = new ReentrantReadWriteLock();
     private final Lock read = readWriteLock.readLock();
     private final Lock write = readWriteLock.writeLock();
+    /**
+     * 锁，用于自我保护机制
+     * 当计算如下参数时使用：
+     *  1. {@link #numberOfRenewsPerMinThreshold}
+     *  2. {@link #expectedNumberOfRenewsPerMin}
+     */
     protected final Object lock = new Object();
 
     private Timer deltaRetentionTimer = new Timer("Eureka-DeltaRetentionTimer", true);
@@ -110,7 +116,14 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     private final AtomicReference<EvictionTask> evictionTaskRef = new AtomicReference<EvictionTask>();
 
     protected String[] allKnownRemoteRegions = EMPTY_STR_ARRAY;
+    /**
+     * 期望最小每分钟续租次数  自我保护机制使用
+     */
     protected volatile int numberOfRenewsPerMinThreshold;
+
+    /**
+     * 期望最大每分钟续租次数 自我保护机制使用
+     */
     protected volatile int expectedNumberOfRenewsPerMin;
 
     protected final EurekaServerConfig serverConfig;
@@ -128,6 +141,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         this.recentCanceledQueue = new CircularQueue<Pair<Long, String>>(1000);
         this.recentRegisteredQueue = new CircularQueue<Pair<Long, String>>(1000);
 
+        //续租请求速率测量实例，默认的时间间隔为1m
         this.renewsLastMin = new MeasuredRate(1000 * 60 * 1);
 
         this.deltaRetentionTimer.schedule(getDeltaRetentionTask(),
@@ -236,14 +250,29 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                     registrant = existingLease.getHolder();
                 }
             } else {
-                //租约不存在，需要创建当前实例的新租约信息
+
+
+                //当租约不存在时，说明是新实例添加进来
+                //此时需要重新计算expectedNumberOfRenewsPerMin，numberOfRenewsPerMinThreshold值
+                //添加一个实例信息数据
                 // The lease does not exist and hence it is a new registration
                 synchronized (lock) {
                     if (this.expectedNumberOfRenewsPerMin > 0) {
                         // Since the client wants to cancel it, reduce the threshold
                         // (1
                         // for 30 seconds, 2 for a minute)
+                        // expectedNumberOfRenewsPerMin = 当前注册的应用实例数 x 2
+                        //为什么乘以 2
+                        //默认情况下，注册的应用实例每半分钟续租一次，那么一分钟心跳两次，因此 x 2 。
+                        //这块会有一些硬编码的情况，因此不太建议修改应用实例的续租频率。
                         this.expectedNumberOfRenewsPerMin = this.expectedNumberOfRenewsPerMin + 2;
+                        //expectedNumberOfRenewsPerMin * 续租百分比( eureka.renewalPercentThreshold )
+                        //为什么乘以续租百分比
+                        //
+                        //低于这个百分比，意味着开启自我保护机制。
+                        //默认情况下，eureka.renewalPercentThreshold = 0.85 。
+                        //如果你真的调整了续租频率，可以等比去续租百分比，以保证合适的触发自我保护机制的阀值。
+                        //另外，你需要注意，续租频率是 Client 级别，续租百分比是 Server 级别。
                         this.numberOfRenewsPerMinThreshold =
                                 (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
                     }
@@ -389,14 +418,17 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             InstanceInfo instanceInfo = leaseToRenew.getHolder();
             if (instanceInfo != null) {
                 // touchASGCache(instanceInfo.getASGName());
+                //获得应用实例的最终状态
                 InstanceStatus overriddenInstanceStatus = this.getOverriddenInstanceStatus(
                         instanceInfo, leaseToRenew, isReplication);
+                //应用实例的最终状态为 UNKNOWN，无法续约，返回 false
                 if (overriddenInstanceStatus == InstanceStatus.UNKNOWN) {
                     logger.info("Instance status UNKNOWN possibly due to deleted override for instance {}"
                             + "; re-register required", instanceInfo.getId());
                     RENEW_NOT_FOUND.increment(isReplication);
                     return false;
                 }
+                //应用实例的状态与最终状态不相等，使用最终状态覆盖应用实例的状态
                 if (!instanceInfo.getStatus().equals(overriddenInstanceStatus)) {
                     logger.info(
                             "The instance status {} is different from overridden instance status {} for instance {}. "
@@ -407,6 +439,11 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
 
                 }
             }
+            //renewsLastMin 有如下用途：
+            //    配合 Netflix Servo 实现监控信息采集续租每分钟次数。
+            //    Eureka-Server 运维界面的显示续租每分钟次数。
+            //    自我保护机制。
+            //调用次数+1
             renewsLastMin.increment();
             //更新服务最后更新的时间戳 （当前时间+给定定时）
             //最后更新时间=服务最后一次心跳时间+定时（默认90s）
@@ -602,6 +639,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * 过期租约清理
      * Evicts everything in the instance registry that has expired, if expiry is enabled.
      *
      * @see com.netflix.eureka.lease.LeaseManager#evict()
@@ -611,6 +649,10 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         evict(0l);
     }
 
+    /**
+     * 过期租约清理
+     * @param additionalLeaseMs
+     */
     public void evict(long additionalLeaseMs) {
         logger.debug("Running the evict task");
 
@@ -1160,6 +1202,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * 获取当前server 上一个间隔总共接收的续租数
      * Servo route; do not call.
      *
      * @return servo data
@@ -1248,6 +1291,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
             evictionTaskRef.get().cancel();
         }
         evictionTaskRef.set(new EvictionTask());
+        //过期租约定时清理任务
         evictionTimer.schedule(evictionTaskRef.get(),
                 serverConfig.getEvictionIntervalTimerInMs(),
                 serverConfig.getEvictionIntervalTimerInMs());
@@ -1268,6 +1312,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         return overriddenInstanceStatusMap.size();
     }
 
+    /**
+     * 租约过期清理任务
+     * 正常情况下，应用实例下线时候会主动向 Eureka-Server 发起下线请求。
+     * 但实际情况下，应用实例可能异常崩溃，又或者是网络异常等原因，导致下线请求无法被成功提交。
+     * 介于这种情况，通过 Eureka-Client 心跳延长租约，配合 Eureka-Server EvictionTask清理超时的租约解决上述异常
+     */
     /* visible for testing */ class EvictionTask extends TimerTask {
 
         private final AtomicLong lastExecutionNanosRef = new AtomicLong(0l);
