@@ -17,7 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 定时任务抽象类，抽象了基础的定时任务功能
+ * 监管定时任务的任务
+ * 主管的任务安排，执行任务超时。
+ * 包装的任务必须是线程安全的。
  * A supervisor task that schedules subtasks while enforce a timeout.
  * Wrapped subtasks must be thread safe.
  *
@@ -34,12 +36,31 @@ public class TimedSupervisorTask extends TimerTask {
     private final Counter throwableCounter;
     private final LongGauge threadPoolLevelGauge;
 
+    /**
+     * 定时任务服务 用于定时【发起】子任务。
+     */
     private final ScheduledExecutorService scheduler;
+    /**
+     * 执行子任务线程池 用于【提交】子任务执行。
+     */
     private final ThreadPoolExecutor executor;
+    /**
+     * 子任务执行超时时间，单位：毫秒
+     */
     private final long timeoutMillis;
+    /**
+     * 子任务
+     */
     private final Runnable task;
 
+    /**
+     * 前子任务执行频率，单位：毫秒。值等于 timeout 参数
+     */
     private final AtomicLong delay;
+    /**
+     *最大子任务执行频率  ，单位：毫秒。值等于 timeout * expBackOffBound 参数
+     * 子任务执行超时情况下使用
+     */
     private final long maxDelay;
 
     public TimedSupervisorTask(String name, ScheduledExecutorService scheduler, ThreadPoolExecutor executor,
@@ -51,9 +72,9 @@ public class TimedSupervisorTask extends TimerTask {
         this.timeoutMillis = timeUnit.toMillis(timeout);
         //任务实例
         this.task = task;
-        //延迟时长
+        //当前任子务执行频率
         this.delay = new AtomicLong(timeoutMillis);
-        //最大延迟时长
+        //最大子任务执行频率  expBackOffBound=执行超时后的延迟重试的时间
         this.maxDelay = timeoutMillis * expBackOffBound;
 
         // Initialize the counters and register.
@@ -64,6 +85,11 @@ public class TimedSupervisorTask extends TimerTask {
         Monitors.registerObject(name, this);
     }
 
+    /**
+     *  TimedSupervisorTask 执行时，提交 task 到 executor 执行任务。
+     *  当 task 执行正常，TimedSupervisorTask 再次提交自己到scheduler 延迟 timeoutMillis 执行。
+     *  当 task 执行超时，重新计算延迟时间( 不允许超过 maxDelay )，再次提交自己到scheduler 延迟执行。
+     */
     @Override
     public void run() {
         Future<?> future = null;
@@ -78,6 +104,9 @@ public class TimedSupervisorTask extends TimerTask {
             delay.set(timeoutMillis);
             threadPoolLevelGauge.set((long) executor.getActiveCount());
         } catch (TimeoutException e) {
+            // 子任务 task 执行超时，重新计算下一次执行延迟 delay 。
+            // 计算公式为 Math.min(maxDelay, currentDelay * 2) 。
+            // 如果多次超时，超时时间不断乘以 2 ，不允许超过最大延迟时间( maxDelay )。
             logger.warn("task supervisor timed out", e);
             //超时计数器+1
             timeoutCounter.increment();
@@ -108,6 +137,7 @@ public class TimedSupervisorTask extends TimerTask {
             }
 
             if (!scheduler.isShutdown()) {
+                //调度下一次 TimedSupervisorTask
                 scheduler.schedule(this, delay.get(), TimeUnit.MILLISECONDS);
             }
         }

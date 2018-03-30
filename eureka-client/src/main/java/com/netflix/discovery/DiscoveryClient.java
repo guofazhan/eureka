@@ -922,17 +922,22 @@ public class DiscoveryClient implements EurekaClient {
 
     /**
      * 心跳发送方法
+     * eureka client 向eureka server端发起续租请求的具体实现方法
      * Renew with the eureka service by making the appropriate REST call
      */
     boolean renew() {
         EurekaHttpResponse<InstanceInfo> httpResponse;
         try {
+            //向eureka server 发送续租请求，参数 appname instanceId  instanceInfo
             httpResponse = eurekaTransport.registrationClient.sendHeartBeat(instanceInfo.getAppName(), instanceInfo.getId(), instanceInfo, null);
             logger.debug(PREFIX + "{} - Heartbeat status: {}", appPathIdentifier, httpResponse.getStatusCode());
             if (httpResponse.getStatusCode() == 404) {
+                //当前续租请求返回404时，表示当前client在server不存在租约信息，重新发起注册请求
+                //此处可参见InstanceResource renewLease()方法
                 REREGISTER_COUNTER.increment();
                 logger.info(PREFIX + "{} - Re-registering apps/{}", appPathIdentifier, instanceInfo.getAppName());
                 long timestamp = instanceInfo.setIsDirtyWithTime();
+                //向eureka Server发送注册请求
                 boolean success = register();
                 if (success) {
                     instanceInfo.unsetIsDirty(timestamp);
@@ -1334,6 +1339,13 @@ public class DiscoveryClient implements EurekaClient {
      * Initializes all scheduled tasks.
      */
     private void initScheduledTasks() {
+        //ScheduledExecutorService API
+        //	schedule(Callable<V> callable, long delay, TimeUnit unit)  创建并执行在给定延迟后启用的 ScheduledFuture。
+        //  schedule(Runnable command, long delay, TimeUnit unit)   创建并执行在给定延迟后启用的一次性操作
+        //  scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)
+        //  创建并执行一个在给定初始延迟后首次启用的定期操作，后续操作具有给定的周期；也就是将在 initialDelay 后开始执行，然后在 initialDelay+period 后执行，接着在 initialDelay + 2 * period 后执行，依此类推。
+        //  scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit)
+        //  创建并执行一个在给定初始延迟后首次启用的定期操作，随后，在每一次执行终止和下一次执行开始之间都存在给定的延迟。
 
         //shouldFetchRegistry()是否从 Eureka-Server 拉取注册信息
         if (clientConfig.shouldFetchRegistry()) {
@@ -1343,7 +1355,9 @@ public class DiscoveryClient implements EurekaClient {
             int registryFetchIntervalSeconds = clientConfig.getRegistryFetchIntervalSeconds();
             //getCacheRefreshExecutorExponentialBackOffBound注册信息缓存刷新执行超时后的延迟重试的时间
             int expBackOffBound = clientConfig.getCacheRefreshExecutorExponentialBackOffBound();
-            //定时任务每registryFetchIntervalSeconds （秒）执行一次TimedSupervisorTask任务
+
+            //定时任务，延迟registryFetchIntervalSeconds 执行一次任务
+            //具体周期行执行再TimedSupervisorTask中实现
             scheduler.schedule(
                     new TimedSupervisorTask(
                             "cacheRefresh",
@@ -1504,6 +1518,7 @@ public class DiscoveryClient implements EurekaClient {
 
     /**
      * 心跳线程
+     * 执行 eureka client 定时向eureka server端发起续租请求
      * The heartbeat task that renews the lease in the given intervals.
      */
     private class HeartbeatThread implements Runnable {

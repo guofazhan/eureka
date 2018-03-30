@@ -49,7 +49,7 @@ public interface LeaseManager<T> {
     void register(T r, int leaseDuration, boolean isReplication);
 
     /**
-     * 删除一个服务信息
+     * 下线一个服务信息
      * Cancel the {@link Lease} associated w/ the passed in <code>appName</code>
      * and <code>id</code>.
      *
@@ -77,7 +77,7 @@ public interface LeaseManager<T> {
     boolean renew(String appName, String id, boolean isReplication);
 
     /**
-     * 服务过期( 过期下线）
+     * 服务剔除( 过期下线）
      * Evict {@link T}s with expired {@link Lease}(s).
      */
     void evict();
