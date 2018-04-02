@@ -9,6 +9,12 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public interface ResponseCache {
 
+    /**
+     * 过期缓存
+     * @param appName
+     * @param vipAddress
+     * @param secureVipAddress
+     */
     void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress);
 
     AtomicLong getVersionDelta();
@@ -16,6 +22,7 @@ public interface ResponseCache {
     AtomicLong getVersionDeltaWithRegions();
 
     /**
+     * 根据key获取响应数据
      * Get the cached information about applications.
      *
      * <p>
@@ -30,6 +37,7 @@ public interface ResponseCache {
      String get(Key key);
 
     /**
+     * 根据key获取响应数据并压缩
      * Get the compressed information about the applications.
      *
      * @param key the key for which the compressed cached information needs to be obtained.

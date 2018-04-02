@@ -8,11 +8,15 @@ import java.util.Arrays;
 
 public class Key {
 
+    /**
+     * 响应的数据类型枚举
+     */
     public enum KeyType {
         JSON, XML
     }
 
     /**
+     * 响应实例类型枚举
      * An enum to define the entity that is stored in this cache for this key.
      */
     public enum EntityType {
@@ -22,8 +26,14 @@ public class Key {
     private final String entityName;
     private final String[] regions;
     private final KeyType requestType;
+    /**
+     * 请求接口版本
+     */
     private final Version requestVersion;
     private final String hashKey;
+    /**
+     * 响应的实体类型
+     */
     private final EntityType entityType;
     private final EurekaAccept eurekaAccept;
 

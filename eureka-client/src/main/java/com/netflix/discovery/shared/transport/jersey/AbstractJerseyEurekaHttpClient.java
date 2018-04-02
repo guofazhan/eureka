@@ -170,11 +170,21 @@ public abstract class AbstractJerseyEurekaHttpClient implements EurekaHttpClient
         }
     }
 
+    /**
+     * 全量获取
+     * @param regions
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Applications> getApplications(String... regions) {
         return getApplicationsInternal("apps/", regions);
     }
 
+    /**
+     *
+     * @param regions
+     * @return
+     */
     @Override
     public EurekaHttpResponse<Applications> getDelta(String... regions) {
         return getApplicationsInternal("apps/delta", regions);

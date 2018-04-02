@@ -58,6 +58,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 响应缓存实现类
+ * 在 ResponseCacheImpl 里，将缓存拆分成两层 ：
+ *  只读缓存( readOnlyCacheMap )
+ *  固定过期 + 固定大小的读写缓存( readWriteCacheMap
  * The class that is responsible for caching registry information that will be
  * queried by the clients.
  *
@@ -112,9 +116,18 @@ public class ResponseCacheImpl implements ResponseCache {
                 }
             });
 
+    /**
+     * 只读缓存
+     */
     private final ConcurrentMap<Key, Value> readOnlyCacheMap = new ConcurrentHashMap<Key, Value>();
 
+    /**
+     * 固定过期 + 固定大小的读写缓存( readWriteCacheMap)
+     */
     private final LoadingCache<Key, Value> readWriteCacheMap;
+    /**
+     * 是否开启使用只读缓存
+     */
     private final boolean shouldUseReadOnlyResponseCache;
     private final AbstractInstanceRegistry registry;
     private final EurekaServerConfig serverConfig;
@@ -127,9 +140,14 @@ public class ResponseCacheImpl implements ResponseCache {
         this.registry = registry;
 
         long responseCacheUpdateIntervalMs = serverConfig.getResponseCacheUpdateIntervalMs();
+        //初始化读写缓存 此处使用的google cache组件
         this.readWriteCacheMap =
-                CacheBuilder.newBuilder().initialCapacity(1000)
+                CacheBuilder.newBuilder()
+                        //缓存大小
+                        .initialCapacity(1000)
+                        //是在指定项在一定时间内(getResponseCacheAutoExpirationInSeconds)没有创建/覆盖时，会移除该key
                         .expireAfterWrite(serverConfig.getResponseCacheAutoExpirationInSeconds(), TimeUnit.SECONDS)
+                        //移除监听事件
                         .removalListener(new RemovalListener<Key, Value>() {
                             @Override
                             public void onRemoval(RemovalNotification<Key, Value> notification) {
@@ -143,6 +161,7 @@ public class ResponseCacheImpl implements ResponseCache {
                         .build(new CacheLoader<Key, Value>() {
                             @Override
                             public Value load(Key key) throws Exception {
+                                //当读写缓存中无此key的数据时,generatePayload方法加载数据
                                 if (key.hasRegions()) {
                                     Key cloneWithNoRegions = key.cloneWithoutRegions();
                                     regionSpecificKeys.put(cloneWithNoRegions, key);
@@ -153,6 +172,7 @@ public class ResponseCacheImpl implements ResponseCache {
                         });
 
         if (shouldUseReadOnlyResponseCache) {
+            //当开启使用只读缓存时，启用定时任务定时同步只读缓存与读写缓存数据
             timer.schedule(getCacheUpdateTask(),
                     new Date(((System.currentTimeMillis() / responseCacheUpdateIntervalMs) * responseCacheUpdateIntervalMs)
                             + responseCacheUpdateIntervalMs),
@@ -345,6 +365,9 @@ public class ResponseCacheImpl implements ResponseCache {
         Value payload = null;
         try {
             if (useReadOnlyCache) {
+                //是否使用只读缓存 当使用只读缓存时，
+                //首先在只读缓存中获取数据，只读缓存中无数据时在读写缓存中获取数据
+                //并将读写缓存中获取的数据添加到只读缓存中
                 final Value currentPayload = readOnlyCacheMap.get(key);
                 if (currentPayload != null) {
                     payload = currentPayload;

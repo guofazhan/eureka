@@ -43,6 +43,7 @@ import com.netflix.eureka.registry.Key.KeyType;
 import com.netflix.eureka.registry.ResponseCacheImpl;
 import com.netflix.eureka.registry.Key;
 import com.netflix.eureka.util.EurekaMonitors;
+import org.slf4j.LoggerFactory;
 
 /**
  * A <em>jersey</em> resource that handles request related to all
@@ -52,189 +53,230 @@ import com.netflix.eureka.util.EurekaMonitors;
  *
  */
 @Path("/{version}/apps")
-@Produces({"application/xml", "application/json"})
+@Produces({ "application/xml", "application/json" })
 public class ApplicationsResource {
-    private static final String HEADER_ACCEPT = "Accept";
-    private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
-    private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
-    private static final String HEADER_CONTENT_TYPE = "Content-Type";
-    private static final String HEADER_GZIP_VALUE = "gzip";
-    private static final String HEADER_JSON_VALUE = "json";
+	private static final String HEADER_ACCEPT = "Accept";
+	private static final String HEADER_ACCEPT_ENCODING = "Accept-Encoding";
+	private static final String HEADER_CONTENT_ENCODING = "Content-Encoding";
+	private static final String HEADER_CONTENT_TYPE = "Content-Type";
+	private static final String HEADER_GZIP_VALUE = "gzip";
+	private static final String HEADER_JSON_VALUE = "json";
 
-    private final EurekaServerConfig serverConfig;
-    private final PeerAwareInstanceRegistry registry;
-    private final ResponseCache responseCache;
+	private final EurekaServerConfig serverConfig;
+	private final PeerAwareInstanceRegistry registry;
+	private final ResponseCache responseCache;
 
-    @Inject
-    ApplicationsResource(EurekaServerContext eurekaServer) {
-        this.serverConfig = eurekaServer.getServerConfig();
-        this.registry = eurekaServer.getRegistry();
-        this.responseCache = registry.getResponseCache();
-    }
+	@Inject
+	ApplicationsResource(EurekaServerContext eurekaServer) {
+		this.serverConfig = eurekaServer.getServerConfig();
+		this.registry = eurekaServer.getRegistry();
+		this.responseCache = registry.getResponseCache();
+	}
 
-    public ApplicationsResource() {
-        this(EurekaServerContextHolder.getInstance().getServerContext());
-    }
+	public ApplicationsResource() {
+		this(EurekaServerContextHolder.getInstance().getServerContext());
+	}
 
-    /**
-     * Gets information about a particular {@link com.netflix.discovery.shared.Application}.
-     *
-     * @param version
-     *            the version of the request.
-     * @param appId
-     *            the unique application identifier (which is the name) of the
-     *            application.
-     * @return information about a particular application.
-     */
-    @Path("{appId}")
-    public ApplicationResource getApplicationResource(
-            @PathParam("version") String version,
-            @PathParam("appId") String appId) {
-        CurrentRequestVersion.set(Version.toEnum(version));
-        return new ApplicationResource(appId, serverConfig, registry);
-    }
+	/**
+	 * Gets information about a particular
+	 * {@link com.netflix.discovery.shared.Application}.
+	 *
+	 * @param version
+	 *            the version of the request.
+	 * @param appId
+	 *            the unique application identifier (which is the name) of the
+	 *            application.
+	 * @return information about a particular application.
+	 */
+	@Path("{appId}")
+	public ApplicationResource getApplicationResource(
+			@PathParam("version") String version,
+			@PathParam("appId") String appId) {
+		CurrentRequestVersion.set(Version.toEnum(version));
+		return new ApplicationResource(appId, serverConfig, registry);
+	}
 
-    /**
-     * Get information about all {@link com.netflix.discovery.shared.Applications}.
-     *
-     * @param version the version of the request.
-     * @param acceptHeader the accept header to indicate whether to serve JSON or XML data.
-     * @param acceptEncoding the accept header to indicate whether to serve compressed or uncompressed data.
-     * @param eurekaAccept an eureka accept extension, see {@link com.netflix.appinfo.EurekaAccept}
-     * @param uriInfo the {@link java.net.URI} information of the request made.
-     * @param regionsStr A comma separated list of remote regions from which the instances will also be returned.
-     *                   The applications returned from the remote region can be limited to the applications
-     *                   returned by {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
-     *
-     * @return a response containing information about all {@link com.netflix.discovery.shared.Applications}
-     *         from the {@link AbstractInstanceRegistry}.
-     */
-    @GET
-    public Response getContainers(@PathParam("version") String version,
-                                  @HeaderParam(HEADER_ACCEPT) String acceptHeader,
-                                  @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-                                  @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
-                                  @Context UriInfo uriInfo,
-                                  @Nullable @QueryParam("regions") String regionsStr) {
+	/**
+	 * Get information about all
+	 * {@link com.netflix.discovery.shared.Applications}.
+	 *
+	 * @param version
+	 *            the version of the request.
+	 * @param acceptHeader
+	 *            the accept header to indicate whether to serve JSON or XML
+	 *            data.
+	 * @param acceptEncoding
+	 *            the accept header to indicate whether to serve compressed or
+	 *            uncompressed data.
+	 * @param eurekaAccept
+	 *            an eureka accept extension, see
+	 *            {@link com.netflix.appinfo.EurekaAccept}
+	 * @param uriInfo
+	 *            the {@link java.net.URI} information of the request made.
+	 * @param regionsStr
+	 *            A comma separated list of remote regions from which the
+	 *            instances will also be returned. The applications returned
+	 *            from the remote region can be limited to the applications
+	 *            returned by
+	 *            {@link EurekaServerConfig#getRemoteRegionAppWhitelist(String)}
+	 *
+	 * @return a response containing information about all
+	 *         {@link com.netflix.discovery.shared.Applications} from the
+	 *         {@link AbstractInstanceRegistry}.
+	 */
+	@GET
+	public Response getContainers(@PathParam("version") String version,
+			@HeaderParam(HEADER_ACCEPT) String acceptHeader,
+			@HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
+			@HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
+			@Context UriInfo uriInfo,
+			@Nullable @QueryParam("regions") String regionsStr) {
+		LoggerFactory.getLogger(ApplicationsResource.class).info(
+				"进入拉取全量注册表方法，(version={},acceptHeader={},acceptEncoding={},eurekaAccept={},uriInfo={},regionsStr={})",
+				version, acceptHeader, acceptEncoding, eurekaAccept, uriInfo,
+				regionsStr);
+		//远程区域请求
+		boolean isRemoteRegionRequested = null != regionsStr
+				&& !regionsStr.isEmpty();
+		String[] regions = null;
+		if (!isRemoteRegionRequested) {
+			EurekaMonitors.GET_ALL.increment();
+		} else {
+			regions = regionsStr.toLowerCase().split(",");
+			Arrays.sort(regions); // So we don't have different caches for same
+									// regions queried in different order.
+			EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
+		}
 
-        boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
-        String[] regions = null;
-        if (!isRemoteRegionRequested) {
-            EurekaMonitors.GET_ALL.increment();
-        } else {
-            regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
-            EurekaMonitors.GET_ALL_WITH_REMOTE_REGIONS.increment();
-        }
+        // 判断是否可以访问
+        //Eureka-Server 启动完成，但是未处于就绪( Ready )状态，不接受请求全量应用注册信息的请求，
+        // 例如，Eureka-Server 启动时，未能从其他 Eureka-Server 集群的节点获取到应用注册信息
+		// Check if the server allows the access to the registry. The server can
+		// restrict access if it is not
+		// ready to serve traffic depending on various reasons.
+		if (!registry.shouldAllowAccess(isRemoteRegionRequested)) {
+			return Response.status(Status.FORBIDDEN).build();
+		}
 
-        // Check if the server allows the access to the registry. The server can
-        // restrict access if it is not
-        // ready to serve traffic depending on various reasons.
-        if (!registry.shouldAllowAccess(isRemoteRegionRequested)) {
-            return Response.status(Status.FORBIDDEN).build();
-        }
-        CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = Key.KeyType.JSON;
-        String returnMediaType = MediaType.APPLICATION_JSON;
-        if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
-            keyType = Key.KeyType.XML;
-            returnMediaType = MediaType.APPLICATION_XML;
-        }
+		// API 版本
+		CurrentRequestVersion.set(Version.toEnum(version));
 
-        Key cacheKey = new Key(Key.EntityType.Application,
-                ResponseCacheImpl.ALL_APPS,
-                keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
-        );
+		// 返回数据格式,默认json
+		KeyType keyType = Key.KeyType.JSON;
+		//响应的MediaType 默认为application/json
+		String returnMediaType = MediaType.APPLICATION_JSON;
+		if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
+			keyType = Key.KeyType.XML;
+			returnMediaType = MediaType.APPLICATION_XML;
+		}
 
-        Response response;
-        if (acceptEncoding != null && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-            response = Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
-        } else {
-            response = Response.ok(responseCache.get(cacheKey))
-                    .build();
-        }
-        return response;
-    }
+		// 响应缓存键( KEY ) 构建一个响应的缓存KEY
+		Key cacheKey = new Key(Key.EntityType.Application,
+				ResponseCacheImpl.ALL_APPS, keyType,
+				CurrentRequestVersion.get(),
+				EurekaAccept.fromString(eurekaAccept), regions);
 
-    /**
-     * Get information about all delta changes in {@link com.netflix.discovery.shared.Applications}.
-     *
-     * <p>
-     * The delta changes represent the registry information change for a period
-     * as configured by
-     * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}. The
-     * changes that can happen in a registry include
-     * <em>Registrations,Cancels,Status Changes and Expirations</em>. Normally
-     * the changes to the registry are infrequent and hence getting just the
-     * delta will be much more efficient than getting the complete registry.
-     * </p>
-     *
-     * <p>
-     * Since the delta information is cached over a period of time, the requests
-     * may return the same data multiple times within the window configured by
-     * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}.The clients
-     * are expected to handle this duplicate information.
-     * <p>
-     *
-     * @param version the version of the request.
-     * @param acceptHeader the accept header to indicate whether to serve  JSON or XML data.
-     * @param acceptEncoding the accept header to indicate whether to serve compressed or uncompressed data.
-     * @param eurekaAccept an eureka accept extension, see {@link com.netflix.appinfo.EurekaAccept}
-     * @param uriInfo  the {@link java.net.URI} information of the request made.
-     * @return response containing the delta information of the
-     *         {@link AbstractInstanceRegistry}.
-     */
-    @Path("delta")
-    @GET
-    public Response getContainerDifferential(
-            @PathParam("version") String version,
-            @HeaderParam(HEADER_ACCEPT) String acceptHeader,
-            @HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
-            @HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
-            @Context UriInfo uriInfo, @Nullable @QueryParam("regions") String regionsStr) {
+		Response response;
+		if (acceptEncoding != null
+				&& acceptEncoding.contains(HEADER_GZIP_VALUE)) {
+			//通过缓存KEY在responseCache获取响应数据
+			response = Response.ok(responseCache.getGZIP(cacheKey))
+					.header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
+					.header(HEADER_CONTENT_TYPE, returnMediaType).build();
+		} else {
+			//通过缓存KEY在responseCache获取响应数据
+			response = Response.ok(responseCache.get(cacheKey)).build();
+		}
+		return response;
+	}
 
-        boolean isRemoteRegionRequested = null != regionsStr && !regionsStr.isEmpty();
+	/**
+	 * Get information about all delta changes in
+	 * {@link com.netflix.discovery.shared.Applications}.
+	 *
+	 * <p>
+	 * The delta changes represent the registry information change for a period
+	 * as configured by
+	 * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}. The
+	 * changes that can happen in a registry include
+	 * <em>Registrations,Cancels,Status Changes and Expirations</em>. Normally
+	 * the changes to the registry are infrequent and hence getting just the
+	 * delta will be much more efficient than getting the complete registry.
+	 * </p>
+	 *
+	 * <p>
+	 * Since the delta information is cached over a period of time, the requests
+	 * may return the same data multiple times within the window configured by
+	 * {@link EurekaServerConfig#getRetentionTimeInMSInDeltaQueue()}.The clients
+	 * are expected to handle this duplicate information.
+	 * <p>
+	 *
+	 * @param version
+	 *            the version of the request.
+	 * @param acceptHeader
+	 *            the accept header to indicate whether to serve JSON or XML
+	 *            data.
+	 * @param acceptEncoding
+	 *            the accept header to indicate whether to serve compressed or
+	 *            uncompressed data.
+	 * @param eurekaAccept
+	 *            an eureka accept extension, see
+	 *            {@link com.netflix.appinfo.EurekaAccept}
+	 * @param uriInfo
+	 *            the {@link java.net.URI} information of the request made.
+	 * @return response containing the delta information of the
+	 *         {@link AbstractInstanceRegistry}.
+	 */
+	@Path("delta")
+	@GET
+	public Response getContainerDifferential(
+			@PathParam("version") String version,
+			@HeaderParam(HEADER_ACCEPT) String acceptHeader,
+			@HeaderParam(HEADER_ACCEPT_ENCODING) String acceptEncoding,
+			@HeaderParam(EurekaAccept.HTTP_X_EUREKA_ACCEPT) String eurekaAccept,
+			@Context UriInfo uriInfo,
+			@Nullable @QueryParam("regions") String regionsStr) {
 
-        // If the delta flag is disabled in discovery or if the lease expiration
-        // has been disabled, redirect clients to get all instances
-        if ((serverConfig.shouldDisableDelta()) || (!registry.shouldAllowAccess(isRemoteRegionRequested))) {
-            return Response.status(Status.FORBIDDEN).build();
-        }
+		boolean isRemoteRegionRequested = null != regionsStr
+				&& !regionsStr.isEmpty();
 
-        String[] regions = null;
-        if (!isRemoteRegionRequested) {
-            EurekaMonitors.GET_ALL_DELTA.increment();
-        } else {
-            regions = regionsStr.toLowerCase().split(",");
-            Arrays.sort(regions); // So we don't have different caches for same regions queried in different order.
-            EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
-        }
+		// If the delta flag is disabled in discovery or if the lease expiration
+		// has been disabled, redirect clients to get all instances
+		if ((serverConfig.shouldDisableDelta())
+				|| (!registry.shouldAllowAccess(isRemoteRegionRequested))) {
+			return Response.status(Status.FORBIDDEN).build();
+		}
 
-        CurrentRequestVersion.set(Version.toEnum(version));
-        KeyType keyType = Key.KeyType.JSON;
-        String returnMediaType = MediaType.APPLICATION_JSON;
-        if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
-            keyType = Key.KeyType.XML;
-            returnMediaType = MediaType.APPLICATION_XML;
-        }
+		String[] regions = null;
+		if (!isRemoteRegionRequested) {
+			EurekaMonitors.GET_ALL_DELTA.increment();
+		} else {
+			regions = regionsStr.toLowerCase().split(",");
+			Arrays.sort(regions); // So we don't have different caches for same
+									// regions queried in different order.
+			EurekaMonitors.GET_ALL_DELTA_WITH_REMOTE_REGIONS.increment();
+		}
 
-        Key cacheKey = new Key(Key.EntityType.Application,
-                ResponseCacheImpl.ALL_APPS_DELTA,
-                keyType, CurrentRequestVersion.get(), EurekaAccept.fromString(eurekaAccept), regions
-        );
+		CurrentRequestVersion.set(Version.toEnum(version));
+		KeyType keyType = Key.KeyType.JSON;
+		String returnMediaType = MediaType.APPLICATION_JSON;
+		if (acceptHeader == null || !acceptHeader.contains(HEADER_JSON_VALUE)) {
+			keyType = Key.KeyType.XML;
+			returnMediaType = MediaType.APPLICATION_XML;
+		}
 
-        if (acceptEncoding != null
-                && acceptEncoding.contains(HEADER_GZIP_VALUE)) {
-            return Response.ok(responseCache.getGZIP(cacheKey))
-                    .header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
-                    .header(HEADER_CONTENT_TYPE, returnMediaType)
-                    .build();
-        } else {
-            return Response.ok(responseCache.get(cacheKey))
-                    .build();
-        }
-    }
+		Key cacheKey = new Key(Key.EntityType.Application,
+				ResponseCacheImpl.ALL_APPS_DELTA, keyType,
+				CurrentRequestVersion.get(),
+				EurekaAccept.fromString(eurekaAccept), regions);
+
+		if (acceptEncoding != null
+				&& acceptEncoding.contains(HEADER_GZIP_VALUE)) {
+			return Response.ok(responseCache.getGZIP(cacheKey))
+					.header(HEADER_CONTENT_ENCODING, HEADER_GZIP_VALUE)
+					.header(HEADER_CONTENT_TYPE, returnMediaType).build();
+		} else {
+			return Response.ok(responseCache.get(cacheKey)).build();
+		}
+	}
 }

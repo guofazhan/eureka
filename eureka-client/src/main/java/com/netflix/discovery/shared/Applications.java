@@ -47,6 +47,9 @@ import com.thoughtworks.xstream.annotations.XStreamAlias;
 import com.thoughtworks.xstream.annotations.XStreamImplicit;
 
 /**
+ *
+ * Applications 与 InstanceInfo关系
+ * apps -(1：N )- app - (1：N )-instanceInfo
  * The class that wraps all the registry information returned by eureka server.
  *
  * <p>
