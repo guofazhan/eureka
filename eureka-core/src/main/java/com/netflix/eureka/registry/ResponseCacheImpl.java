@@ -62,6 +62,8 @@ import org.slf4j.LoggerFactory;
  * 在 ResponseCacheImpl 里，将缓存拆分成两层 ：
  *  只读缓存( readOnlyCacheMap )
  *  固定过期 + 固定大小的读写缓存( readWriteCacheMap
+ *  为什么可以使用缓存？
+ *  在 CAP 的选择上，Eureka 选择了 AP ，不同于 Zookeeper 选择了 CP 。
  * The class that is responsible for caching registry information that will be
  * queried by the clients.
  *
@@ -81,14 +83,27 @@ public class ResponseCacheImpl implements ResponseCache {
 
     private static final Logger logger = LoggerFactory.getLogger(ResponseCacheImpl.class);
 
+    /**
+     * 全量数据 key名称
+     */
     public static final String ALL_APPS = "ALL_APPS";
+    /**
+     * 增量数据KEY 名称
+     */
     public static final String ALL_APPS_DELTA = "ALL_APPS_DELTA";
 
     // FIXME deprecated, here for backwards compatibility.
     private static final AtomicLong versionDeltaLegacy = new AtomicLong(0);
     private static final AtomicLong versionDeltaWithRegionsLegacy = new AtomicLong(0);
 
+    /**
+     * 空数据
+     */
     private static final String EMPTY_PAYLOAD = "";
+    /**
+     * 只读缓存与读写缓存数据同步定时器
+     * eureka.shouldUseReadOnlyResponseCache = true 开启
+     */
     private final java.util.Timer timer = new java.util.Timer("Eureka-CacheFillTimer", true);
     private final AtomicLong versionDelta = new AtomicLong(0);
     private final AtomicLong versionDeltaWithRegions = new AtomicLong(0);
@@ -127,10 +142,21 @@ public class ResponseCacheImpl implements ResponseCache {
     private final LoadingCache<Key, Value> readWriteCacheMap;
     /**
      * 是否开启使用只读缓存
+     * shouldUseReadOnlyResponseCache 通过配置
+     * eureka.shouldUseReadOnlyResponseCache = true (默认值 ：true ) 开启只读缓存
      */
     private final boolean shouldUseReadOnlyResponseCache;
+    /**
+     * 注册表实例
+     */
     private final AbstractInstanceRegistry registry;
+    /**
+     * eureka-server 配置信息实例
+     */
     private final EurekaServerConfig serverConfig;
+    /**
+     * Eureka-Server 请求和响应编解码器
+     */
     private final ServerCodecs serverCodecs;
 
     ResponseCacheImpl(EurekaServerConfig serverConfig, ServerCodecs serverCodecs, AbstractInstanceRegistry registry) {
@@ -186,6 +212,10 @@ public class ResponseCacheImpl implements ResponseCache {
         }
     }
 
+    /**
+     * 只读缓存与读写缓存数据同步任务
+     * @return
+     */
     private TimerTask getCacheUpdateTask() {
         return new TimerTask() {
             @Override
@@ -255,15 +285,22 @@ public class ResponseCacheImpl implements ResponseCache {
     }
 
     /**
+     * 根据参数过期缓存中的数据
+     * 此方法在应用实例注册、下线、过期时，调用 ResponseCacheImpl#invalidate() 方法，
+     * 主动过期读写缓存( readWriteCacheMap )
      * Invalidate the cache of a particular application.
      *
      * @param appName the application name of the application.
      */
     @Override
     public void invalidate(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
+        //循环遍历-响应的数据类型枚举
         for (Key.KeyType type : Key.KeyType.values()) {
+            //循环遍历-接口版本 V1, V2;
             for (Version v : Version.values()) {
+                //调用invalidate 方法过期给定的缓存KEY
                 invalidate(
+                        //构建需要过期的缓存KEY
                         new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.full),
                         new Key(Key.EntityType.Application, appName, type, v, EurekaAccept.compact),
                         new Key(Key.EntityType.Application, ALL_APPS, type, v, EurekaAccept.full),
@@ -282,6 +319,9 @@ public class ResponseCacheImpl implements ResponseCache {
     }
 
     /**
+     * 根据Key过期缓存中的数据
+     */
+    /**
      * Invalidate the cache information given the list of keys.
      *
      * @param keys the list of keys for which the cache information needs to be invalidated.
@@ -291,6 +331,7 @@ public class ResponseCacheImpl implements ResponseCache {
             logger.debug("Invalidating the response cache key : {} {} {} {}, {}",
                     key.getEntityType(), key.getName(), key.getVersion(), key.getType(), key.getEurekaAccept());
 
+            //过期读写缓存
             readWriteCacheMap.invalidate(key);
             Collection<Key> keysWithRegions = regionSpecificKeys.get(key);
             if (null != keysWithRegions && !keysWithRegions.isEmpty()) {
@@ -385,12 +426,15 @@ public class ResponseCacheImpl implements ResponseCache {
     }
 
     /**
+     * 调用 #getPayLoad() 方法，将注册的应用集合转换成缓存值
      * Generate pay load with both JSON and XML formats for all applications.
      */
     private String getPayLoad(Key key, Applications apps) {
+        // 获得编码器
         EncoderWrapper encoderWrapper = serverCodecs.getEncoder(key.getType(), key.getEurekaAccept());
         String result;
         try {
+            //对 apps 进行编码
             result = encoderWrapper.encode(apps);
         } catch (Exception e) {
             logger.error("Failed to encode the payload for all apps", e);
@@ -419,7 +463,8 @@ public class ResponseCacheImpl implements ResponseCache {
         }
     }
 
-    /*
+    /**
+     *  创建一个缓存值
      * Generate pay load for the given key.
      */
     private Value generatePayload(Key key) {
@@ -428,16 +473,23 @@ public class ResponseCacheImpl implements ResponseCache {
             String payload;
             switch (key.getEntityType()) {
                 case Application:
+                    //是否存在区域信息
                     boolean isRemoteRegionRequested = key.hasRegions();
 
+                    //全量 获取
                     if (ALL_APPS.equals(key.getName())) {
                         if (isRemoteRegionRequested) {
+                            //存在区域
                             tracer = serializeAllAppsWithRemoteRegionTimer.start();
                             payload = getPayLoad(key, registry.getApplicationsFromMultipleRegions(key.getRegions()));
                         } else {
+                            //不存在区域
+                            //调用 AbstractInstanceRegistry#getApplications() 方法，获得注册的应用集合。
+                            // 后调用 #getPayLoad() 方法，将注册的应用集合转换成缓存
                             tracer = serializeAllAppsTimer.start();
                             payload = getPayLoad(key, registry.getApplications());
                         }
+                     //增量获取
                     } else if (ALL_APPS_DELTA.equals(key.getName())) {
                         if (isRemoteRegionRequested) {
                             tracer = serializeDeltaAppsWithRemoteRegionTimer.start();
@@ -466,6 +518,7 @@ public class ResponseCacheImpl implements ResponseCache {
                     payload = "";
                     break;
             }
+            //返回一个响应包装类为缓存中的值信息
             return new Value(payload);
         } finally {
             if (tracer != null) {
@@ -515,11 +568,18 @@ public class ResponseCacheImpl implements ResponseCache {
     }
 
     /**
+     *  缓存数据值信息， 整个响应的包装类
      * The class that stores payload in both compressed and uncompressed form.
      *
      */
     public class Value {
+        /**
+         * 响应报文
+         */
         private final String payload;
+        /**
+         * 压缩后的字节码
+         */
         private byte[] gzipped;
 
         public Value(String payload) {
@@ -527,6 +587,7 @@ public class ResponseCacheImpl implements ResponseCache {
             if (!EMPTY_PAYLOAD.equals(payload)) {
                 Stopwatch tracer = compressPayloadTimer.start();
                 try {
+                    //对报文进行压缩
                     ByteArrayOutputStream bos = new ByteArrayOutputStream();
                     GZIPOutputStream out = new GZIPOutputStream(bos);
                     byte[] rawBytes = payload.getBytes();

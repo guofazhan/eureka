@@ -753,6 +753,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
     }
 
     /**
+     * 获取所有注册实例信息集合
      * Get all applications in this instance registry, falling back to other regions if allowed in the Eureka config.
      *
      * @return the list of all known applications
@@ -764,28 +765,35 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         if (disableTransparentFallback) {
             return getApplicationsFromLocalRegionOnly();
         } else {
-            return getApplicationsFromAllRemoteRegions();  // Behavior of falling back to remote region can be disabled.
+            // Behavior of falling back to remote region can be disabled.
+            return getApplicationsFromAllRemoteRegions();
         }
     }
 
     /**
+     * 获取所有已知的区域（ all remote regions）的注册信息集合
      * Returns applications including instances from all remote regions. <br/>
      * Same as calling {@link #getApplicationsFromMultipleRegions(String[])} with a <code>null</code> argument.
      */
     public Applications getApplicationsFromAllRemoteRegions() {
+        //获取所有已知的区域
         return getApplicationsFromMultipleRegions(allKnownRemoteRegions);
     }
 
     /**
+     * 仅获取local region的注册信息集合
      * Returns applications including instances from local region only. <br/>
      * Same as calling {@link #getApplicationsFromMultipleRegions(String[])} with an empty array.
      */
     @Override
     public Applications getApplicationsFromLocalRegionOnly() {
+        //仅获取local region的注册信息集合
         return getApplicationsFromMultipleRegions(EMPTY_STR_ARRAY);
     }
 
     /**
+     *
+     * 获取注册应用集合信息
      * This method will return applications with instances from all passed remote regions as well as the current region.
      * Thus, this gives a union view of instances from multiple regions. <br/>
      * The application instances for which this union will be done can be restricted to the names returned by
@@ -804,6 +812,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
      */
     public Applications getApplicationsFromMultipleRegions(String[] remoteRegions) {
 
+        // TODO[0009]：RemoteRegionRegistry
         boolean includeRemoteRegion = null != remoteRegions && remoteRegions.length != 0;
 
         logger.debug("Fetching applications registry with remote regions: {}, Regions argument {}",
@@ -814,24 +823,39 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         } else {
             GET_ALL_CACHE_MISS.increment();
         }
+        //创建apps实例
         Applications apps = new Applications();
+        //设置版本号
         apps.setVersion(1L);
+
+        //遍历应用map  appname - map<instanceId,Lease>
         for (Entry<String, Map<String, Lease<InstanceInfo>>> entry : registry.entrySet()) {
+            //app 实例
             Application app = null;
 
+            //构建 app 实例
             if (entry.getValue() != null) {
+
+                //遍历实例map instanceId-Lease
                 for (Entry<String, Lease<InstanceInfo>> stringLeaseEntry : entry.getValue().entrySet()) {
+                    //获取实例租约信息
                     Lease<InstanceInfo> lease = stringLeaseEntry.getValue();
+
                     if (app == null) {
+                        //创建实
                         app = new Application(lease.getHolder().getAppName());
                     }
+                    // 一个应用可以对应多个实例信息：添加实例信息
                     app.addInstance(decorateInstanceInfo(lease));
                 }
             }
+
             if (app != null) {
+                //应用集合中添加一个应用信息
                 apps.addApplication(app);
             }
         }
+        //当包含远程区域时，添加远程区域的注册应用信息 TODO[0009]：RemoteRegionRegistry
         if (includeRemoteRegion) {
             for (String remoteRegion : remoteRegions) {
                 RemoteRegionRegistry remoteRegistry = regionNameVSRemoteRegistry.get(remoteRegion);
@@ -861,6 +885,7 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
                 }
             }
         }
+        //设置应用集合的hascode ，用于增量计算
         apps.setAppsHashCode(apps.getReconcileHashCode());
         return apps;
     }
@@ -1262,6 +1287,12 @@ public abstract class AbstractInstanceRegistry implements InstanceRegistry {
         return list;
     }
 
+    /**
+     * 过期给定参数的响应缓存数据
+     * @param appName
+     * @param vipAddress
+     * @param secureVipAddress
+     */
     private void invalidateCache(String appName, @Nullable String vipAddress, @Nullable String secureVipAddress) {
         // invalidate cache
         responseCache.invalidate(appName, vipAddress, secureVipAddress);

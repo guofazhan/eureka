@@ -83,10 +83,24 @@ public class Applications {
 
     private static final String STATUS_DELIMITER = "_";
 
+    /**
+     * hash code
+     */
     private String appsHashCode;
+
+    /**
+     * 版本信息
+     */
     private Long versionDelta;
+
+    /**
+     *  Application queue
+     */
     @XStreamImplicit
     private final AbstractQueue<Application> applications;
+    /**
+     * appname - app map
+     */
     private final Map<String, Application> appNameApplicationMap;
     private final Map<String, VipIndexSupport> virtualHostNameAppMap;
     private final Map<String, VipIndexSupport> secureVirtualHostNameAppMap;
