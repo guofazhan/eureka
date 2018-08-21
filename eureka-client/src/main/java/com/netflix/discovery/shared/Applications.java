@@ -49,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 所有服务集群实例，当前注册中心上的所有集群信息
  * The class that wraps all the registry information returned by eureka server.
  *
  * <p>

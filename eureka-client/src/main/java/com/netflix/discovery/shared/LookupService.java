@@ -20,6 +20,7 @@ import java.util.List;
 import com.netflix.appinfo.InstanceInfo;
 
 /**
+ * 服务发现接口
  * Lookup service for finding active instances.
  *
  * @author Karthik Ranganathan, Greg Kim.
