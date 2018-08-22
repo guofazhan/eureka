@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * eureka server 集群节点类 此类表示与当前节点集群的远程节点
  * The <code>PeerEurekaNode</code> represents a peer node to which information
  * should be shared from this node.
  *
@@ -48,11 +49,13 @@ import org.slf4j.LoggerFactory;
 public class PeerEurekaNode {
 
     /**
+     * 网络错误后下一次执行的等待时长
      * A time to wait before continuing work if there is network level error.
      */
     private static final long RETRY_SLEEP_TIME_MS = 100;
 
     /**
+     * 服务阻塞后下次执行的等待时长
      * A time to wait before continuing work if there is congestion on the server side.
      */
     private static final long SERVER_UNAVAILABLE_SLEEP_TIME_MS = 1000;
@@ -63,30 +66,69 @@ public class PeerEurekaNode {
     private static final long MAX_BATCHING_DELAY_MS = 500;
 
     /**
+     * 最大的批量请求数
      * Maximum batch size for batched requests.
      */
     private static final int BATCH_SIZE = 250;
 
     private static final Logger logger = LoggerFactory.getLogger(PeerEurekaNode.class);
 
+    /**
+     * 批量请求调用REST api路径
+     */
     public static final String BATCH_URL_PATH = "peerreplication/batch/";
 
+    /**
+     * 批量请求HEADER KEY
+     */
     public static final String HEADER_REPLICATION = "x-netflix-discovery-replication";
 
+    /**
+     * 远程节点URL
+     */
     private final String serviceUrl;
+    /**
+     * 本地节点配置信息
+     */
     private final EurekaServerConfig config;
     private final long maxProcessingDelayMs;
     private final PeerAwareInstanceRegistry registry;
+    /**
+     * 远程节点host
+     */
     private final String targetHost;
+    /**
+     * 与远程节点通讯客户端
+     */
     private final HttpReplicationClient replicationClient;
 
     private final TaskDispatcher<String, ReplicationTask> batchingDispatcher;
     private final TaskDispatcher<String, ReplicationTask> nonBatchingDispatcher;
 
+    /**
+     * 构造器
+     * @param registry
+     * @param targetHost
+     * @param serviceUrl
+     * @param replicationClient
+     * @param config
+     */
     public PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl, HttpReplicationClient replicationClient, EurekaServerConfig config) {
         this(registry, targetHost, serviceUrl, replicationClient, config, BATCH_SIZE, MAX_BATCHING_DELAY_MS, RETRY_SLEEP_TIME_MS, SERVER_UNAVAILABLE_SLEEP_TIME_MS);
     }
 
+    /**
+     * 构造器
+     * @param registry
+     * @param targetHost
+     * @param serviceUrl
+     * @param replicationClient
+     * @param config
+     * @param batchSize
+     * @param maxBatchingDelayMs
+     * @param retrySleepTimeMs
+     * @param serverUnavailableSleepTimeMs
+     */
     /* For testing */ PeerEurekaNode(PeerAwareInstanceRegistry registry, String targetHost, String serviceUrl,
                                      HttpReplicationClient replicationClient, EurekaServerConfig config,
                                      int batchSize, long maxBatchingDelayMs,
@@ -100,7 +142,9 @@ public class PeerEurekaNode {
         this.maxProcessingDelayMs = config.getMaxTimeForReplication();
 
         String batcherName = getBatcherName();
+        //任务处理器
         ReplicationTaskProcessor taskProcessor = new ReplicationTaskProcessor(targetHost, replicationClient);
+        //创建一个批量执行的任务调度器
         this.batchingDispatcher = TaskDispatchers.createBatchingTaskDispatcher(
                 batcherName,
                 config.getMaxElementsInPeerReplicationPool(),
@@ -111,6 +155,7 @@ public class PeerEurekaNode {
                 retrySleepTimeMs,
                 taskProcessor
         );
+        //创建一个单任务调度器
         this.nonBatchingDispatcher = TaskDispatchers.createNonBatchingTaskDispatcher(
                 targetHost,
                 config.getMaxElementsInStatusReplicationPool(),
@@ -123,6 +168,7 @@ public class PeerEurekaNode {
     }
 
     /**
+     * 当eureka server注册新服务时，同时创建一个定时任务将新服务同步到集群其它节点
      * Sends the registration information of {@link InstanceInfo} receiving by
      * this node to the peer node represented by this class.
      *
@@ -133,6 +179,7 @@ public class PeerEurekaNode {
      */
     public void register(final InstanceInfo info) throws Exception {
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
+        //任务调度器中添加一个请求类型为注册register新服务的同步任务
         batchingDispatcher.process(
                 taskId("register", info),
                 new InstanceReplicationTask(targetHost, Action.Register, info, null, true) {
@@ -145,6 +192,7 @@ public class PeerEurekaNode {
     }
 
     /**
+     * 当eureka server在注册列表中取消一个服务时，同时创建一个定时任务将取消的服务同步到集群其它节点
      * Send the cancellation information of an instance to the node represented
      * by this class.
      *
@@ -156,6 +204,7 @@ public class PeerEurekaNode {
      */
     public void cancel(final String appName, final String id) throws Exception {
         long expiryTime = System.currentTimeMillis() + maxProcessingDelayMs;
+        //任务调度器中添加一个请求类型为取消cancel服务的同步任务
         batchingDispatcher.process(
                 taskId("cancel", appName, id),
                 new InstanceReplicationTask(targetHost, Action.Cancel, appName, id) {
@@ -177,6 +226,7 @@ public class PeerEurekaNode {
     }
 
     /**
+     * 当eureka server接受到客户端的心跳信息时，同时将心跳信息同步到其它节点
      * Send the heartbeat information of an instance to the node represented by
      * this class. If the instance does not exist the node, the instance
      * registration information is sent again to the peer node.
@@ -194,11 +244,13 @@ public class PeerEurekaNode {
     public void heartbeat(final String appName, final String id,
                           final InstanceInfo info, final InstanceStatus overriddenStatus,
                           boolean primeConnection) throws Throwable {
+        //当第一次连接时直接发送心跳到远端
         if (primeConnection) {
             // We do not care about the result for priming request.
             replicationClient.sendHeartBeat(appName, id, info, overriddenStatus);
             return;
         }
+        //心跳同步任务
         ReplicationTask replicationTask = new InstanceReplicationTask(targetHost, Action.Heartbeat, info, overriddenStatus, false) {
             @Override
             public EurekaHttpResponse<InstanceInfo> execute() throws Throwable {
@@ -224,6 +276,7 @@ public class PeerEurekaNode {
             }
         };
         long expiryTime = System.currentTimeMillis() + getLeaseRenewalOf(info);
+        //任务调度器中添加一个请求类型为heartbeat服务的同步任务
         batchingDispatcher.process(taskId("heartbeat", info), replicationTask, expiryTime);
     }
 
@@ -254,7 +307,7 @@ public class PeerEurekaNode {
     }
 
     /**
-     *
+     *  创建状态更新同步任务，将新状态同步到其它节点
      * Send the status update of the instance.
      *
      * @param appName
@@ -382,10 +435,23 @@ public class PeerEurekaNode {
         return "target_" + batcherName;
     }
 
+    /**
+     * 创建任务ID
+     * @param requestType 请求类型
+     * @param appName appid
+     * @param id instanceId
+     * @return
+     */
     private static String taskId(String requestType, String appName, String id) {
         return requestType + '#' + appName + '/' + id;
     }
 
+    /**
+     * 创建任务ID
+     * @param requestType 请求类型
+     * @param info 注册列表实例信息
+     * @return
+     */
     private static String taskId(String requestType, InstanceInfo info) {
         return taskId(requestType, info.getAppName(), info.getId());
     }

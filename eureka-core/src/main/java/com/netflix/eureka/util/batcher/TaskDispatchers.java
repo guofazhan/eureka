@@ -7,6 +7,19 @@ package com.netflix.eureka.util.batcher;
  */
 public class TaskDispatchers {
 
+    /**
+     * 创建单个任务执行的任务调度器
+     * @param id
+     * @param maxBufferSize
+     * @param workerCount
+     * @param maxBatchingDelay
+     * @param congestionRetryDelayMs
+     * @param networkFailureRetryMs
+     * @param taskProcessor
+     * @param <ID>
+     * @param <T>
+     * @return
+     */
     public static <ID, T> TaskDispatcher<ID, T> createNonBatchingTaskDispatcher(String id,
                                                                                 int maxBufferSize,
                                                                                 int workerCount,
@@ -32,6 +45,20 @@ public class TaskDispatchers {
         };
     }
 
+    /**
+     * 创建批量处理任务的任务调度器
+     * @param id
+     * @param maxBufferSize
+     * @param workloadSize
+     * @param workerCount
+     * @param maxBatchingDelay
+     * @param congestionRetryDelayMs
+     * @param networkFailureRetryMs
+     * @param taskProcessor
+     * @param <ID>
+     * @param <T>
+     * @return
+     */
     public static <ID, T> TaskDispatcher<ID, T> createBatchingTaskDispatcher(String id,
                                                                              int maxBufferSize,
                                                                              int workloadSize,

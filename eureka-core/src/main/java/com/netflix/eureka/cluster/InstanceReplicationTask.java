@@ -5,6 +5,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
+ * 注册表实例同步任务
  * Base {@link ReplicationTask} class for instance related replication requests.
  *
  * @author Tomasz Bak

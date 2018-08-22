@@ -1,6 +1,7 @@
 package com.netflix.eureka.util.batcher;
 
 /**
+ * 任务调度接口，
  * Task dispatcher takes task from clients, and delegates their execution to a configurable number of workers.
  * The task can be processed one at a time or in batches. Only non-expired tasks are executed, and if a newer
  * task with the same id is scheduled for execution, the old one is deleted. Lazy dispatch of work (only on demand)
@@ -17,7 +18,16 @@ package com.netflix.eureka.util.batcher;
  */
 public interface TaskDispatcher<ID, T> {
 
+    /**
+     * 执行任务
+     * @param id
+     * @param task
+     * @param expiryTime
+     */
     void process(ID id, T task, long expiryTime);
 
+    /**
+     * 关闭
+     */
     void shutdown();
 }

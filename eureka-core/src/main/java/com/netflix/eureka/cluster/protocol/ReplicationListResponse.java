@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.discovery.provider.Serializer;
 
 /**
+ * 批量同步操作的响应体
  * The jersey resource class that generates the replication batch response.
  */
 @Serializer("jackson") // For backwards compatibility with DiscoveryJerseyProvider

@@ -5,11 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.appinfo.InstanceInfo;
 
 /**
+ * 节点间同步操作响应
  * The jersey resource class that generates the replication indivdiual response.
  */
 public class ReplicationInstanceResponse {
 
+    /**
+     * 响应码
+     */
     private final int statusCode;
+    /**
+     *
+     */
     private final InstanceInfo responseEntity;
 
     @JsonCreator

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import static com.netflix.eureka.cluster.protocol.ReplicationInstance.ReplicationInstanceBuilder.aReplicationInstance;
 
 /**
+ * eureka server节点间同步任务处理器
  * @author Tomasz Bak
  */
 class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
@@ -34,11 +35,18 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         this.peerId = peerId;
     }
 
+    /**
+     * 单个处理ReplicationTask任务
+     * @param task
+     * @return
+     */
     @Override
     public ProcessingResult process(ReplicationTask task) {
         try {
+            //调用任务execute方法，完成任务的执行
             EurekaHttpResponse<?> httpResponse = task.execute();
             int statusCode = httpResponse.getStatusCode();
+            //判断任务返回结果
             Object entity = httpResponse.getEntity();
             if (logger.isDebugEnabled()) {
                 logger.debug("Replication task {} completed with status {}, (includes entity {})", task.getTaskName(), statusCode, entity != null);
@@ -64,11 +72,19 @@ class ReplicationTaskProcessor implements TaskProcessor<ReplicationTask> {
         return ProcessingResult.Success;
     }
 
+    /**
+     * 批量处理ReplicationTask任务
+     * @param tasks
+     * @return
+     */
     @Override
     public ProcessingResult process(List<ReplicationTask> tasks) {
+        //根据task集合创建ReplicationList
         ReplicationList list = createReplicationListOf(tasks);
         try {
+            //调用批量同步接口 将同步集合发送到远端节点同步数据
             EurekaHttpResponse<ReplicationListResponse> response = replicationClient.submitBatchUpdates(list);
+            //判断同步返回结果
             int statusCode = response.getStatusCode();
             if (!isSuccess(statusCode)) {
                 if (statusCode == 503) {

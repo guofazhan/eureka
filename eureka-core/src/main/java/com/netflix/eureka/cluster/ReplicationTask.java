@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * eureka server节点间同步任务
  * Base class for all replication tasks.
  */
 abstract class ReplicationTask {

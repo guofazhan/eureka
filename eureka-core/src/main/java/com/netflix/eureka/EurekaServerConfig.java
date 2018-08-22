@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Eureka 服务端配置信息接口
  * Configuration information required by the eureka server to operate.
  *
  * <p>

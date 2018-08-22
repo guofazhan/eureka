@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.discovery.provider.Serializer;
 
 /**
+ * 批量同步操作请求体
  * @author Tomasz Bak
  */
 @Serializer("jackson") // For backwards compatibility with DiscoveryJerseyProvider

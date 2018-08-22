@@ -22,22 +22,51 @@ import com.netflix.eureka.registry.PeerAwareInstanceRegistry;
 import com.netflix.eureka.resources.ServerCodecs;
 
 /**
+ * Eureka 服务端上下问环境接口
  * @author David Liu
  */
 public interface EurekaServerContext {
 
+    /**
+     * 初始化
+     * @throws Exception
+     */
     void initialize() throws Exception;
 
+    /**
+     * 关闭
+     * @throws Exception
+     */
     void shutdown() throws Exception;
 
+    /**
+     * 获取服务端配置信息
+     * @return
+     */
     EurekaServerConfig getServerConfig();
 
+    /**
+     * 获取服务端集群节点信息
+     * @return
+     */
     PeerEurekaNodes getPeerEurekaNodes();
 
+    /**
+     * 获取服务端对外提供编码解码器
+     * @return
+     */
     ServerCodecs getServerCodecs();
 
+    /**
+     *
+     * @return
+     */
     PeerAwareInstanceRegistry getRegistry();
 
+    /**
+     * 获取服务端对应的客户端管理器（Eureka服务端同时也是一个客户端与其它节点交互）
+     * @return
+     */
     ApplicationInfoManager getApplicationInfoManager();
 
 }

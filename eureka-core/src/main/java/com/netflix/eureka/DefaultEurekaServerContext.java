@@ -29,6 +29,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
+ * 默认Eureka 服务端上下问环境
  * Represent the local server context and exposes getters to components of the
  * local server such as the registry.
  *
@@ -38,10 +39,22 @@ import javax.inject.Singleton;
 public class DefaultEurekaServerContext implements EurekaServerContext {
     private static final Logger logger = LoggerFactory.getLogger(DefaultEurekaServerContext.class);
 
+    /**
+     * 配置
+     */
     private final EurekaServerConfig serverConfig;
+    /**
+     * 对外编码解码器
+     */
     private final ServerCodecs serverCodecs;
     private final PeerAwareInstanceRegistry registry;
+    /**
+     * eureka server 集群节点集合
+     */
     private final PeerEurekaNodes peerEurekaNodes;
+    /**
+     * 当前客户端的管理类
+     */
     private final ApplicationInfoManager applicationInfoManager;
 
     @Inject

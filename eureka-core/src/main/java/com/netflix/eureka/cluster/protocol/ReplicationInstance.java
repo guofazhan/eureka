@@ -6,15 +6,39 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.eureka.registry.PeerAwareInstanceRegistryImpl.Action;
 
 /**
+ * server节点间同步的实例信息
  * The jersey resource class that generates a particular replication event
  */
 public class ReplicationInstance {
+    /**
+     * appid 集群ID
+     */
     private String appName;
+    /**
+     * 实例ID
+     */
     private String id;
     private Long lastDirtyTimestamp;
+    /**
+     * 覆盖状态
+     */
     private String overriddenStatus;
+    /**
+     * 当前状态
+     */
     private String status;
+    /**
+     * 实例信息
+     */
     private InstanceInfo instanceInfo;
+    /**
+     * 同步的动作类型
+     *  Heartbeat 心跳,
+     *  Register 注册,
+     *  Cancel 取消,
+     *  StatusUpdate 状态更新,
+     *  DeleteStatusOverride 删除覆盖状态
+     */
     private Action action;
 
     @JsonCreator
