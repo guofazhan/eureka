@@ -25,12 +25,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 远程HTTP请求响应结果
  * @author Tomasz Bak
  */
 public class EurekaHttpResponse<T> {
+    /**
+     * 状态码
+     */
     private final int statusCode;
+    /**
+     * 响应内容
+     */
     private final T entity;
+    /**
+     * 响应头信息
+     */
     private final Map<String, String> headers;
+    /**
+     * location URL
+     */
     private final URI location;
 
     protected EurekaHttpResponse(int statusCode, T entity) {

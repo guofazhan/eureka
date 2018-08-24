@@ -44,11 +44,23 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     private final Random random = new Random();
 
     private final String name;
+    /**
+     * 目标客户端创建工厂
+     */
     private final EurekaHttpClientFactory clientFactory;
+    /**
+     * 会话持续时间基准，每个会话的持续时间根据sessionDurationMs通过randomizeSessionDuration计算
+     */
     private final long sessionDurationMs;
+    /**
+     * 当前会话的持续时间
+     */
     private volatile long currentSessionDurationMs;
 
     private volatile long lastReconnectTimeStamp = -1;
+    /**
+     * 目标客户端，原子性，线程安全
+     */
     private final AtomicReference<EurekaHttpClient> eurekaHttpClientRef = new AtomicReference<>();
 
     public SessionedEurekaHttpClient(String name, EurekaHttpClientFactory clientFactory, long sessionDurationMs) {
@@ -61,8 +73,11 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
 
     @Override
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
+        //获取当前时间
         long now = System.currentTimeMillis();
+        //获取延迟时间
         long delay = now - lastReconnectTimeStamp;
+        //当延迟时间>=当前会话的持续时间时，重置时间
         if (delay >= currentSessionDurationMs) {
             logger.debug("Ending a session and starting anew");
             lastReconnectTimeStamp = now;
@@ -86,6 +101,7 @@ public class SessionedEurekaHttpClient extends EurekaHttpClientDecorator {
     }
 
     /**
+     * 请求会话的持续时间计算
      * @return a randomized sessionDuration in ms calculated as +/- an additional amount in [0, sessionDurationMs/2]
      */
     protected long randomizeSessionDuration(long sessionDurationMs) {

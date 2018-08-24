@@ -5,6 +5,7 @@ import com.netflix.config.DynamicPropertyFactory;
 import static com.netflix.discovery.shared.transport.PropertyBasedTransportConfigConstants.*;
 
 /**
+ * eureka 远程通讯客户端配置默认实现
  * @author David Liu
  */
 public class DefaultEurekaTransportConfig implements EurekaTransportConfig {

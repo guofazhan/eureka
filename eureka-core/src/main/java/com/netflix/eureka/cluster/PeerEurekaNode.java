@@ -102,7 +102,14 @@ public class PeerEurekaNode {
      */
     private final HttpReplicationClient replicationClient;
 
+    /**
+     * 批处理任务调度器
+     */
     private final TaskDispatcher<String, ReplicationTask> batchingDispatcher;
+
+    /**
+     * 单任务处理调度器
+     */
     private final TaskDispatcher<String, ReplicationTask> nonBatchingDispatcher;
 
     /**

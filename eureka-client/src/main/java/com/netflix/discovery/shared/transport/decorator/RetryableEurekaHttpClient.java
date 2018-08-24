@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import static com.netflix.discovery.EurekaClientNames.METRIC_TRANSPORT_PREFIX;
 
 /**
+ *  实现请求失败重试的Eureka远程通讯客户端装饰器，为客户端添加失败重试功能
  * {@link RetryableEurekaHttpClient} retries failed requests on subsequent servers in the cluster.
  * It maintains also simple quarantine list, so operations are not retried again on servers
  * that are not reachable at the moment.
@@ -57,17 +58,44 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private static final Logger logger = LoggerFactory.getLogger(RetryableEurekaHttpClient.class);
 
+    /**
+     * 默认的重试次数 3
+     */
     public static final int DEFAULT_NUMBER_OF_RETRIES = 3;
 
+    /**
+     *
+     */
     private final String name;
+    /**
+     * 客户端配置
+     */
     private final EurekaTransportConfig transportConfig;
+    /**
+     * 集群转换器
+     */
     private final ClusterResolver clusterResolver;
+    /**
+     * 客户端创建工厂
+     */
     private final TransportClientFactory clientFactory;
+    /**
+     *
+     */
     private final ServerStatusEvaluator serverStatusEvaluator;
+    /**
+     * 重试次数
+     */
     private final int numberOfRetries;
 
+    /**
+     * 真实客户端
+     */
     private final AtomicReference<EurekaHttpClient> delegate = new AtomicReference<>();
 
+    /**
+     *
+     */
     private final Set<EurekaEndpoint> quarantineSet = new ConcurrentSkipListSet<>();
 
     public RetryableEurekaHttpClient(String name,
@@ -97,9 +125,12 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
     protected <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor) {
         List<EurekaEndpoint> candidateHosts = null;
         int endpointIdx = 0;
+        //遍历重试次数
         for (int retry = 0; retry < numberOfRetries; retry++) {
+            //获取真实客户端信息
             EurekaHttpClient currentHttpClient = delegate.get();
             EurekaEndpoint currentEndpoint = null;
+            //当前客户端为空时，遍历server端集群地址，创建新连接客户端
             if (currentHttpClient == null) {
                 if (candidateHosts == null) {
                     candidateHosts = getHostCandidates();
@@ -116,12 +147,15 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
             }
 
             try {
+                //通过请求执行器执行请求
                 EurekaHttpResponse<R> response = requestExecutor.execute(currentHttpClient);
+                //校验请求执行是否成功
                 if (serverStatusEvaluator.accept(response.getStatusCode(), requestExecutor.getRequestType())) {
                     delegate.set(currentHttpClient);
                     if (retry > 0) {
                         logger.info("Request execution succeeded on retry #{}", retry);
                     }
+                    //请求执行成功返回响应
                     return response;
                 }
                 logger.warn("Request execution failure with status code {}; retrying on another server if available", response.getStatusCode());
@@ -129,15 +163,27 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
                 logger.warn("Request execution failed with message: {}", e.getMessage());  // just log message as the underlying client should log the stacktrace
             }
 
+            //执行失败时，将目标客户端设置null
             // Connection error or 5xx from the server that must be retried on another server
             delegate.compareAndSet(currentHttpClient, null);
+            //
             if (currentEndpoint != null) {
                 quarantineSet.add(currentEndpoint);
             }
+            //继续遍历直到达到最大重试次数
         }
         throw new TransportException("Retry limit reached; giving up on completing the request");
     }
 
+    /**
+     * 构建请求失败重试的Eureka远程通讯客户端装饰器的创建工厂
+     * @param name
+     * @param transportConfig
+     * @param clusterResolver
+     * @param delegateFactory
+     * @param serverStatusEvaluator
+     * @return
+     */
     public static EurekaHttpClientFactory createFactory(final String name,
                                                         final EurekaTransportConfig transportConfig,
                                                         final ClusterResolver<EurekaEndpoint> clusterResolver,
@@ -157,6 +203,10 @@ public class RetryableEurekaHttpClient extends EurekaHttpClientDecorator {
         };
     }
 
+    /**
+     * 获取server端集群地址
+     * @return
+     */
     private List<EurekaEndpoint> getHostCandidates() {
         List<EurekaEndpoint> candidateHosts = clusterResolver.getClusterEndpoints();
         quarantineSet.retainAll(candidateHosts);

@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * 实现请求重定向的Eureka远程通讯客户端装饰器，为客户端添加请求重定向功能
  * {@link EurekaHttpClient} that follows redirect links, and executes the requests against
  * the finally resolved endpoint.
  * If registration and query requests must handled separately, two different instances shall be created.
@@ -47,6 +48,9 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
 
     private static final Logger logger = LoggerFactory.getLogger(RedirectingEurekaHttpClient.class);
 
+    /**
+     * 最大重定向的次数
+     */
     public static final int MAX_FOLLOWED_REDIRECTS = 10;
     private static final Pattern REDIRECT_PATH_REGEX = Pattern.compile("(.*/v2/)apps(/.*)?$");
 
@@ -54,6 +58,9 @@ public class RedirectingEurekaHttpClient extends EurekaHttpClientDecorator {
     private final TransportClientFactory factory;
     private final DnsService dnsService;
 
+    /**
+     * 目标客户端
+     */
     private final AtomicReference<EurekaHttpClient> delegateRef = new AtomicReference<>();
 
     /**

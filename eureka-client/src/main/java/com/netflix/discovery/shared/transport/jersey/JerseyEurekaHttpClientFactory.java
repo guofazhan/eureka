@@ -94,6 +94,11 @@ public class JerseyEurekaHttpClientFactory implements TransportClientFactory {
         this.cleaner = new ApacheHttpClientConnectionCleaner(this.apacheClient, connectionIdleTimeout);
     }
 
+    /**
+     * 服务创建JerseyApplicationClient
+     * @param endpoint
+     * @return
+     */
     @Override
     public EurekaHttpClient newClient(EurekaEndpoint endpoint) {
         return new JerseyApplicationClient(apacheClient, endpoint.getServiceUrl(), additionalHeaders);

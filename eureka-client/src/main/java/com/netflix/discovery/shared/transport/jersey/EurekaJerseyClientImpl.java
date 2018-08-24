@@ -31,6 +31,7 @@ import org.apache.http.params.HttpParams;
 import static com.netflix.discovery.util.DiscoveryBuildInfo.buildVersion;
 
 /**
+ * Eureka远程通讯之http客户端（Jersey）默认实现
  * @author Tomasz Bak
  */
 public class EurekaJerseyClientImpl implements EurekaJerseyClient {
@@ -75,6 +76,9 @@ public class EurekaJerseyClientImpl implements EurekaJerseyClient {
         apacheHttpClient.destroy();
     }
 
+    /**
+     * http 客户端构建器
+     */
     public static class EurekaJerseyClientBuilder {
 
         private boolean systemSSL;

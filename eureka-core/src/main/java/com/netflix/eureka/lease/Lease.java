@@ -19,6 +19,7 @@ package com.netflix.eureka.lease;
 import com.netflix.eureka.registry.AbstractInstanceRegistry;
 
 /**
+ * 实例租约包装类，描述实例基于时间的可用性
  * Describes a time-based availability of a {@link T}. Purpose is to avoid
  * accumulation of instances in {@link AbstractInstanceRegistry} as result of ungraceful
  * shutdowns that is not uncommon in AWS environments.
@@ -32,20 +33,55 @@ import com.netflix.eureka.registry.AbstractInstanceRegistry;
  */
 public class Lease<T> {
 
+    /**
+     * 实例针对租约变化的动作类型
+     */
     enum Action {
-        Register, Cancel, Renew
+        //实例注册
+        Register,
+        //实例取消
+        Cancel,
+        //实例刷新
+        Renew
     };
 
+    /**
+     * 默认的租约有效时长 90s
+     */
     public static final int DEFAULT_DURATION_IN_SECS = 90;
 
+    /**
+     * 实例信息，此处默认为 InstanceInfo
+     */
     private T holder;
+    /**
+     * 取消注册时间
+     */
     private long evictionTimestamp;
+    /**
+     * 注册时间
+     */
     private long registrationTimestamp;
+    /**
+     *
+     */
     private long serviceUpTimestamp;
+    /**
+     * 最后更新时间
+     */
     // Make it volatile so that the expiration task would see this quicker
     private volatile long lastUpdateTimestamp;
+
+    /**
+     * 租约的有效时长
+     */
     private long duration;
 
+    /**
+     * 构造函数
+     * @param r
+     * @param durationInSecs
+     */
     public Lease(T r, int durationInSecs) {
         holder = r;
         registrationTimestamp = System.currentTimeMillis();
@@ -55,6 +91,7 @@ public class Lease<T> {
     }
 
     /**
+     * 刷新租约的时间信息，租约续订更新最后更新时间为当前时间+租约有效时长
      * Renew the lease, use renewal duration if it was specified by the
      * associated {@link T} during registration, otherwise default duration is
      * {@link #DEFAULT_DURATION_IN_SECS}.
@@ -65,6 +102,7 @@ public class Lease<T> {
     }
 
     /**
+     * 注册列表剔除当前服务，更新租约的时间信息
      * Cancels the lease by updating the eviction time.
      */
     public void cancel() {
@@ -74,6 +112,7 @@ public class Lease<T> {
     }
 
     /**
+     * 服务上线时间
      * Mark the service as up. This will only take affect the first time called,
      * subsequent calls will be ignored.
      */
@@ -91,6 +130,7 @@ public class Lease<T> {
     }
 
     /**
+     * 检测租约是否过期
      * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
      */
     public boolean isExpired() {
@@ -98,6 +138,7 @@ public class Lease<T> {
     }
 
     /**
+     * 检测租约是否过期
      * Checks if the lease of a given {@link com.netflix.appinfo.InstanceInfo} has expired or not.
      *
      * Note that due to renew() doing the 'wrong" thing and setting lastUpdateTimestamp to +duration more than
@@ -108,6 +149,7 @@ public class Lease<T> {
      * @param additionalLeaseMs any additional lease time to add to the lease evaluation in ms.
      */
     public boolean isExpired(long additionalLeaseMs) {
+        //剔除服务时间>0或当前时间>（最后更新时间+租约有效时长+时间偏差）时 表示租约已失效
         return (evictionTimestamp > 0 || System.currentTimeMillis() > (lastUpdateTimestamp + duration + additionalLeaseMs));
     }
 

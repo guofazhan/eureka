@@ -21,7 +21,7 @@ public interface HttpReplicationClient extends EurekaHttpClient {
     EurekaHttpResponse<Void> statusUpdate(String asgName, ASGStatus newStatus);
 
     /**
-     * 提交注册列表批量复制接口
+     * 提交注册列表批量更新接口
      * @param replicationList
      * @return
      */

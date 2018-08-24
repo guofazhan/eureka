@@ -19,6 +19,7 @@ package com.netflix.discovery.shared.transport.decorator;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
 
 /**
+ * 请求响应状态校验接口的默认实现，用于判断请求响应是否成功
  * @author Tomasz Bak
  */
 public final class ServerStatusEvaluators {

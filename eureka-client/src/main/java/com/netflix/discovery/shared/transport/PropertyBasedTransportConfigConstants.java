@@ -1,6 +1,7 @@
 package com.netflix.discovery.shared.transport;
 
 /**
+ * eureka 远程通讯客户端配置常量信息
  * constants pertaining to property based transport configs
  *
  * @author David Liu

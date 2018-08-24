@@ -1,6 +1,7 @@
 package com.netflix.discovery.shared.transport;
 
 /**
+ * eureka 远程通讯客户端配置接口，获取远程通讯的基础参数信息接口
  * Config class that governs configurations relevant to the transport layer
  *
  * @author David Liu

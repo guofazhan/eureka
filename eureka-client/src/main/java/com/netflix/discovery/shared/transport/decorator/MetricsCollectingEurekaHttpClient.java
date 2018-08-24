@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ *  实现请求响应状态指标采集的Eureka远程通讯客户端装饰器，为客户端添加响应状态指标采集向功能
  * @author Tomasz Bak
  */
 public class MetricsCollectingEurekaHttpClient extends EurekaHttpClientDecorator {

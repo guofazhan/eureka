@@ -24,14 +24,22 @@ import com.netflix.discovery.shared.transport.EurekaHttpClient;
 import com.netflix.discovery.shared.transport.EurekaHttpResponse;
 
 /**
+ * 抽象Eureka远程通讯客户端装饰器，使用设计模式-装饰器模式 为客户端添加新的功能
  * @author Tomasz Bak
  */
 public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
+    /**
+     * 请求类型
+     */
     public enum RequestType {
+        //注册
         Register,
+        //下线
         Cancel,
+        //心跳
         SendHeartBeat,
+        //状态更新
         StatusUpdate,
         DeleteStatusOverride,
         GetApplications,
@@ -43,16 +51,36 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
         GetApplicationInstance
     }
 
+    /**
+     * 请求执行接口，负责执行请求
+     * @param <R>
+     */
     public interface RequestExecutor<R> {
+        /**
+         * 执行请求并返回响应信息
+         * @param delegate 目标的客户端
+         * @return
+         */
         EurekaHttpResponse<R> execute(EurekaHttpClient delegate);
 
+        /**
+         * 请求的类型
+         * @return
+         */
         RequestType getRequestType();
     }
 
+    /**
+     * 抽象的执行方法，由子装饰器实现，附加其它功能
+     * @param requestExecutor
+     * @param <R>
+     * @return
+     */
     protected abstract <R> EurekaHttpResponse<R> execute(RequestExecutor<R> requestExecutor);
 
     @Override
     public EurekaHttpResponse<Void> register(final InstanceInfo info) {
+        //创建一个注册请求的执行器，并执行
         return execute(new RequestExecutor<Void>() {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {
@@ -68,6 +96,7 @@ public abstract class EurekaHttpClientDecorator implements EurekaHttpClient {
 
     @Override
     public EurekaHttpResponse<Void> cancel(final String appName, final String id) {
+        //创建一个下线请求的执行，并执行
         return execute(new RequestExecutor<Void>() {
             @Override
             public EurekaHttpResponse<Void> execute(EurekaHttpClient delegate) {

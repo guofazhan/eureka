@@ -19,6 +19,7 @@ package com.netflix.discovery.shared.transport.decorator;
 import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorator.RequestType;
 
 /**
+ * 请求响应状态校验接口，用于判断请求响应是否成功
  * HTTP status code evaluator, that can be used to make a decision whether it makes sense to
  * immediately retry a request on another server or stick to the current one.
  * Registration requests are critical to complete as soon as possible, so any server error should be followed
@@ -28,5 +29,11 @@ import com.netflix.discovery.shared.transport.decorator.EurekaHttpClientDecorato
  * @author Tomasz Bak
  */
 public interface ServerStatusEvaluator {
+    /**
+     * 校验
+     * @param statusCode 状态码
+     * @param requestType 响应类型
+     * @return
+     */
     boolean accept(int statusCode, RequestType requestType);
 }

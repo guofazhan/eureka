@@ -17,14 +17,22 @@
 package com.netflix.discovery.shared.transport;
 
 /**
+ * Eureka远程通讯客户端创建工厂接口
  * A top level factory to create http clients for application/eurekaClient use
  *
  * @author Tomasz Bak
  */
 public interface EurekaHttpClientFactory {
 
+    /**
+     * 创建新客户端
+     * @return
+     */
     EurekaHttpClient newClient();
 
+    /**
+     * 关闭
+     */
     void shutdown();
 
 }
